@@ -19,10 +19,15 @@ and can be exported/imported as JSON. Nothing is sent to a server.
 All calculations are design aids; a competent person should check inputs before sign-off.
 Radiator outputs use generic panel data. Use the manufacturer's tables for the final selection.
 
+## Website
+
+Every push to `main` runs the tests, builds the app and publishes it to GitHub Pages
+(`.github/workflows/deploy.yml`). In the repo's Settings → Pages, Source must be set to
+**GitHub Actions**.
+
 ## Development
 
 ```bash
-cd designer
 npm install
 npm run dev      # local dev server
 npm test         # engine unit tests
