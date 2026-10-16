@@ -1,6 +1,8 @@
 # CA2 Designer
 
 Heating design and handover pack software for CA2 Mechanical & Electrical.
+
+**Live app:** https://memerrific.github.io/CA2design/
 Runs entirely in the browser: project data is stored on the device (localStorage)
 and can be exported/imported as JSON. Nothing is sent to a server.
 
