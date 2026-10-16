@@ -1,15 +1,14 @@
 import { useState } from 'react';
 import { uid } from '../../engine/factory';
 import { m3sToLpm } from '../../engine/fluid';
-import type { PipeRun, Project } from '../../engine/model';
-import type { ProjectLoss } from '../../engine/heatloss';
+import type { PipeRun } from '../../engine/model';
+import { analyseRun } from '../../engine/design';
 import {
   analysePipe,
   autoSize,
   flowFromHeat,
   MATERIAL_NAMES,
   PIPE_SIZES,
-  pipeSize,
   requiredKv,
   valveDropBar,
   type PipeMaterial,
@@ -18,21 +17,6 @@ import { Card, fmt, NumField, Pill, Select, Stat, TextField } from '../../ui/fie
 import { useProject } from '../ProjectView';
 
 const MATERIALS = Object.keys(MATERIAL_NAMES) as PipeMaterial[];
-
-export function runLoad(loss: ProjectLoss, run: PipeRun) {
-  if (run.loadW > 0) return run.loadW;
-  return run.roomIds.reduce((a, id) => a + Math.max(0, loss.byId.get(id)?.totalW ?? 0), 0);
-}
-
-export function analyseRun(p: Project, loss: ProjectLoss, run: PipeRun) {
-  const s = p.settings;
-  const mean = s.flowTemp - s.deltaT / 2;
-  const load = runLoad(loss, run);
-  const q = flowFromHeat(load, s.deltaT, s.fluid, mean);
-  const size = run.sizeId ? pipeSize(run.sizeId) : autoSize(run.material, q, s.fluid, mean);
-  const res = size ? analysePipe({ sizeId: size.id, lengthM: run.lengthM, fittingsAllowancePct: run.fittingsPct, flowM3s: q, fluid: s.fluid, meanTemp: mean }) : null;
-  return { load, q, size, res };
-}
 
 export function PipeworkTab() {
   const { project: p, loss, update } = useProject();

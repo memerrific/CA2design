@@ -8,8 +8,7 @@ import { covering, designUfhRoom } from '../../engine/ufh';
 import { useStore } from '../../store';
 import { fmt, TextField } from '../../ui/fields';
 import { useProject } from '../ProjectView';
-import { requiredFlowTemp, roomEmitterOutput, ufhInputs } from './Emitters';
-import { analyseRun } from './Pipework';
+import { analyseRun, requiredFlowTemp, roomEmitterOutput, ufhInputs } from '../../engine/design';
 import { IS_PREVIEW } from '../../ui/dialog';
 import { lossColour } from './Plan';
 

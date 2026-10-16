@@ -116,3 +116,33 @@ describe('dxf import', () => {
     expect(rooms[0].walls.filter((w) => w.boundary === 'external')).toHaveLength(3);
   });
 });
+
+describe('materials takeoff and pricing', () => {
+  it('builds pipe, UFH, radiator and equipment lines from the design', async () => {
+    const { demoProject } = await import('../data/demo');
+    const { projectHeatLoss } = await import('./heatloss');
+    const { buildTakeoff, priceProject, merchantCsv } = await import('./takeoff');
+    const p = demoProject();
+    p.rooms[0].emitters.push({ id: 'n', kind: 'radiator', name: 'New', status: 'new', type: '22', height: 600, length: 1200, quantity: 2 });
+    const loss = projectHeatLoss(p);
+    const lines = buildTakeoff(p, loss);
+    const pipe = lines.filter((l) => l.key.startsWith('pipe:'));
+    // 16 m + 12 m of runs with 10% waste, rounded up per size.
+    expect(pipe.reduce((a, l) => a + l.qty, 0)).toBeGreaterThanOrEqual(Math.ceil(28 * 1.1));
+    expect(lines.find((l) => l.key === 'rad:22:600:1200')?.qty).toBe(2);
+    expect(lines.find((l) => l.key === 'rad-valves')?.qty).toBe(2);
+    expect(lines.some((l) => l.key.startsWith('ufh-manifold:'))).toBe(true);
+    expect(lines.filter((l) => l.category === 'Equipment')).toHaveLength(2);
+
+    p.pricing = { ...(await import('./takeoff')).defaultPricing(p), overrides: { 'rad-valves': { exclude: true } }, labour: [{ id: 'l', description: 'Eng', days: 2, dayRate: 250 }] };
+    const r = priceProject(p, loss, { 'rad:22:600:1200': 100, 'rad-valves': 30 });
+    expect(r.materials).toBe(200);
+    expect(r.sundries).toBeCloseTo(30);
+    expect(r.markup).toBeCloseTo(46);
+    expect(r.labour).toBe(500);
+    expect(r.total).toBeCloseTo((200 + 30 + 46 + 500) * 1.2);
+    const csv = merchantCsv(r.lines);
+    expect(csv).toContain('Panel radiator Type 22 (K2) 600 × 1200 mm,2,each');
+    expect(csv).not.toContain('Radiator valve set');
+  });
+});

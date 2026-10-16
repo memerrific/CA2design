@@ -12,6 +12,8 @@ import { UfhTab } from './tabs/Ufh';
 import { PipeworkTab } from './tabs/Pipework';
 import { EquipmentTab } from './tabs/Equipment';
 import { HandoverTab } from './tabs/Handover';
+import { MerchantTab } from './tabs/Merchant';
+import { PricingTab } from './tabs/Pricing';
 
 interface Ctx {
   project: Project;
@@ -23,16 +25,32 @@ interface Ctx {
 const ProjectCtx = createContext<Ctx | null>(null);
 export const useProject = () => useContext(ProjectCtx)!;
 
-const TABS: { id: string; label: string }[] = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'plan', label: 'Floor plan' },
-  { id: 'rooms', label: 'Rooms & fabric' },
-  { id: 'heatloss', label: 'Heat loss' },
-  { id: 'emitters', label: 'Radiators' },
-  { id: 'ufh', label: 'Underfloor' },
-  { id: 'pipework', label: 'Pipework & Kv' },
-  { id: 'equipment', label: 'Equipment' },
-  { id: 'handover', label: 'Handover pack' },
+const NAV: { group: string; tabs: { id: string; label: string }[] }[] = [
+  {
+    group: 'Survey',
+    tabs: [
+      { id: 'overview', label: 'Overview' },
+      { id: 'plan', label: 'Floor plan' },
+      { id: 'rooms', label: 'Rooms & fabric' },
+    ],
+  },
+  {
+    group: 'Design',
+    tabs: [
+      { id: 'heatloss', label: 'Heat loss' },
+      { id: 'emitters', label: 'Radiators' },
+      { id: 'ufh', label: 'Underfloor' },
+      { id: 'pipework', label: 'Pipework & Kv' },
+      { id: 'equipment', label: 'Equipment' },
+    ],
+  },
+  {
+    group: 'Pricing',
+    tabs: [
+      { id: 'pricing', label: 'Materials & quote' },
+      { id: 'merchant', label: 'Merchant request' },
+    ],
+  },
 ];
 
 export function ProjectView({ project, tab }: { project: Project; tab: string }) {
@@ -63,6 +81,10 @@ export function ProjectView({ project, tab }: { project: Project; tab: string })
         return <PipeworkTab />;
       case 'equipment':
         return <EquipmentTab />;
+      case 'pricing':
+        return <PricingTab />;
+      case 'merchant':
+        return <MerchantTab />;
       case 'handover':
         return <HandoverTab />;
       default:
@@ -87,11 +109,25 @@ export function ProjectView({ project, tab }: { project: Project; tab: string })
             </small>
           </div>
           <nav>
-            {TABS.map((t) => (
-              <a key={t.id} href={`#/p/${project.id}/${t.id}`} className={tab === t.id ? 'on' : ''}>
-                {t.label}
-              </a>
+            {NAV.map((g) => (
+              <div key={g.group} className="nav-group">
+                <h5>{g.group}</h5>
+                {g.tabs.map((t) => (
+                  <a key={t.id} href={`#/p/${project.id}/${t.id}`} className={tab === t.id ? 'on' : ''}>
+                    {t.label}
+                  </a>
+                ))}
+              </div>
             ))}
+            <a href={`#/p/${project.id}/handover`} className={`finish ${tab === 'handover' ? 'on' : ''}`}>
+              <span className="tick" aria-hidden="true">
+                ✓
+              </span>
+              <span>
+                Handover pack
+                <small>End of job</small>
+              </span>
+            </a>
           </nav>
         </aside>
         <div className="content">{body}</div>

@@ -3,7 +3,7 @@ import { PIPE_SIZES } from '../../engine/pipes';
 import { designUfhRoom, FLOOR_COVERINGS } from '../../engine/ufh';
 import { Card, fmt, NumField, Pill, Select, Stat, TextField } from '../../ui/fields';
 import { useProject } from '../ProjectView';
-import { roomEmitterOutput, ufhInputs } from './Emitters';
+import { roomEmitterOutput, ufhInputs } from '../../engine/design';
 
 const SPACINGS = [100, 125, 150, 175, 200, 225, 250, 300];
 

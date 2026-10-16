@@ -152,6 +152,44 @@ export interface PlanUnderlay {
   image?: { dataUrl: string; x: number; y: number; widthM: number; heightM: number };
 }
 
+export interface PriceLine {
+  id: string;
+  category: string;
+  description: string;
+  qty: number;
+  unit: string;
+  unitCost: number;
+  notes: string;
+}
+
+export interface LabourLine {
+  id: string;
+  description: string;
+  days: number;
+  dayRate: number;
+}
+
+/** Changes made by hand to a line generated from the design. */
+export interface LineOverride {
+  qty?: number;
+  exclude?: boolean;
+  notes?: string;
+}
+
+export interface Pricing {
+  wastePct: number; // added to pipe and UFH pipe lengths
+  sundriesPct: number; // fittings & consumables, % of materials
+  markupPct: number; // on materials
+  vatPct: number;
+  includeInsulation: boolean;
+  overrides: Record<string, LineOverride>;
+  extras: PriceLine[];
+  labour: LabourLine[];
+  deliveryAddress: string;
+  requiredBy: string;
+  merchantNotes: string;
+}
+
 export interface ProjectSettings {
   externalTemp: number;
   locationName: string;
@@ -193,6 +231,7 @@ export interface Project {
   commissioning: CommissioningField[];
   handover: HandoverSection[];
   plans: Record<string, PlanUnderlay>; // keyed by level
+  pricing?: Pricing; // absent on projects saved before pricing existed
   notes: string;
 }
 
