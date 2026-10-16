@@ -1,0 +1,209 @@
+import type { FluidId } from './fluid';
+import type { Fabric } from '../data/fabrics';
+import type { PipeMaterial } from './pipes';
+
+export type Pt = [number, number];
+
+/** What is on the other side of a building element. */
+export type Boundary =
+  | 'external' // outside air
+  | 'ground' // ground floor / basement wall
+  | 'unheated' // garage, loft void, unheated store
+  | 'neighbour' // heated neighbouring property
+  | 'room'; // another room in this design
+
+export interface Opening {
+  id: string;
+  kind: 'window' | 'door' | 'rooflight';
+  name: string;
+  width: number; // m
+  height: number; // m
+  count: number;
+  fabricId: string;
+}
+
+export interface Wall {
+  id: string;
+  name: string;
+  length: number; // m
+  height?: number; // m, defaults to room height
+  fabricId: string;
+  boundary: Boundary;
+  adjacentRoomId?: string;
+  customTemp?: number;
+  openings: Opening[];
+}
+
+export interface Surface {
+  fabricId: string;
+  boundary: Boundary;
+  adjacentRoomId?: string;
+  customTemp?: number;
+  area?: number; // defaults to room floor area
+}
+
+export type RadiatorType = '11' | '21' | '22' | '33';
+
+export interface Emitter {
+  id: string;
+  kind: 'radiator' | 'custom';
+  name: string;
+  status: 'existing' | 'new' | 'replace';
+  // radiator
+  type?: RadiatorType;
+  height?: number; // mm
+  length?: number; // mm
+  // custom (e.g. fan coil, towel rail) – rated output at ΔT50
+  ratedDt50?: number;
+  quantity: number;
+}
+
+export interface UfhDesign {
+  enabled: boolean;
+  manifoldId: string;
+  spacing: number; // mm
+  covering: string; // floor covering id
+  activeAreaPct: number; // % of floor area with pipe
+  leadLength: number; // m, one way, manifold to room
+  pipeSizeId: string; // pex16 etc
+  screedCover: number; // mm of screed above pipe
+  maxLoopLength: number; // m
+}
+
+export interface Room {
+  id: string;
+  name: string;
+  typeId: string;
+  level: string;
+  designTemp: number;
+  ach: number;
+  area: number; // m²
+  height: number; // m
+  polygon?: Pt[]; // m, from floor plan
+  walls: Wall[];
+  floor: Surface;
+  ceiling: Surface;
+  emitters: Emitter[];
+  ufh: UfhDesign;
+  notes: string;
+}
+
+export interface PipeRun {
+  id: string;
+  name: string;
+  material: PipeMaterial;
+  sizeId: string; // '' = auto
+  lengthM: number; // flow + return length
+  fittingsPct: number;
+  loadW: number; // heat carried; 0 = take from linked rooms
+  roomIds: string[];
+  isIndex: boolean; // part of the index circuit
+}
+
+export interface Valve {
+  id: string;
+  name: string;
+  kv: number;
+  flowM3h: number; // 0 = from linked pipe run
+  pipeRunId?: string;
+  notes: string;
+}
+
+export interface Equipment {
+  id: string;
+  category: string;
+  make: string;
+  model: string;
+  serial: string;
+  location: string;
+  outputKw?: number;
+  notes: string;
+}
+
+export interface CommissioningField {
+  id: string;
+  label: string;
+  value: string;
+}
+
+export interface HandoverSection {
+  id: string;
+  title: string;
+  kind:
+    | 'cover'
+    | 'summary'
+    | 'plan'
+    | 'heatloss'
+    | 'emitters'
+    | 'ufh'
+    | 'pipework'
+    | 'valves'
+    | 'equipment'
+    | 'commissioning'
+    | 'text';
+  enabled: boolean;
+  body?: string; // for text sections
+}
+
+export interface PlanUnderlay {
+  // Lines (m) from a DXF import and an optional raster image.
+  lines: [Pt, Pt][];
+  labels: { at: Pt; text: string }[];
+  image?: { dataUrl: string; x: number; y: number; widthM: number; heightM: number };
+}
+
+export interface ProjectSettings {
+  externalTemp: number;
+  locationName: string;
+  meanExternalTemp: number; // annual mean, used for ground losses
+  neighbourTemp: number;
+  unheatedTemp: number;
+  thermalBridgeU: number; // ΔU added to external elements
+  marginPct: number;
+  flowTemp: number;
+  deltaT: number; // system flow–return difference
+  fluid: FluidId;
+  radiatorExponent: number;
+}
+
+export interface Customer {
+  name: string;
+  address: string;
+  postcode: string;
+  phone: string;
+  email: string;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  reference: string;
+  systemType: string;
+  createdAt: string;
+  updatedAt: string;
+  customer: Customer;
+  engineer: string;
+  settings: ProjectSettings;
+  customFabrics: Fabric[];
+  rooms: Room[];
+  manifolds: { id: string; name: string; location: string }[];
+  pipes: PipeRun[];
+  valves: Valve[];
+  equipment: Equipment[];
+  commissioning: CommissioningField[];
+  handover: HandoverSection[];
+  plans: Record<string, PlanUnderlay>; // keyed by level
+  notes: string;
+}
+
+export interface CompanyProfile {
+  name: string;
+  tagline: string;
+  address: string;
+  phone: string;
+  email: string;
+  website: string;
+  accreditations: string;
+  logoDataUrl?: string;
+  footer: string;
+}
