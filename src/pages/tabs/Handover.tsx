@@ -10,6 +10,7 @@ import { fmt, TextField } from '../../ui/fields';
 import { useProject } from '../ProjectView';
 import { requiredFlowTemp, roomEmitterOutput, ufhInputs } from './Emitters';
 import { analyseRun } from './Pipework';
+import { IS_PREVIEW } from '../../ui/dialog';
 import { lossColour } from './Plan';
 
 export function HandoverTab() {
@@ -34,9 +35,13 @@ export function HandoverTab() {
           <button className="btn ghost" onClick={() => setEditing(!editing)}>
             {editing ? 'Hide editor' : 'Show editor'}
           </button>
-          <button className="btn" onClick={() => window.print()}>
-            Print / save PDF
-          </button>
+          {IS_PREVIEW ? (
+            <span className="muted small">Print / save PDF is available in the installed app.</span>
+          ) : (
+            <button className="btn" onClick={() => window.print()}>
+              Print / save PDF
+            </button>
+          )}
         </div>
       </div>
       <div className={`handover-layout ${editing ? '' : 'full'}`}>

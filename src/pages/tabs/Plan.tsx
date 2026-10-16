@@ -7,6 +7,7 @@ import type { PlanUnderlay, Pt } from '../../engine/model';
 import { readFile } from '../../store';
 import { Card, fmt, Pill } from '../../ui/fields';
 import { useProject } from '../ProjectView';
+import { ask } from '../../ui/dialog';
 import { LEVELS } from './Rooms';
 
 type Tool = 'select' | 'draw' | 'measure';
@@ -79,11 +80,11 @@ export function PlanTab() {
     return [Math.round(q[0] * 20) / 20, Math.round(q[1] * 20) / 20];
   };
 
-  const finishRoom = (poly: Pt[]) => {
+  const finishRoom = async (poly: Pt[]) => {
     setDraft([]);
     if (poly.length < 3 || polygonArea(poly) < 0.3) return;
     const label = plan.labels.find((l) => pointInPolygon(l.at, poly))?.text;
-    const name = prompt('Room name', label ?? `Room ${p.rooms.length + 1}`);
+    const name = await ask.prompt('Room name', label ?? `Room ${p.rooms.length + 1}`);
     if (!name) return;
     update((d) => {
       d.rooms.push(roomFromPolygon(name, poly, level, guessType(name)));
@@ -92,7 +93,7 @@ export function PlanTab() {
     });
   };
 
-  const onClick = (e: MouseEvent) => {
+  const onClick = async (e: MouseEvent) => {
     if (drag.current?.moved) return;
     const q = snap(toWorld(e));
     if (tool === 'draw') {
@@ -103,7 +104,7 @@ export function PlanTab() {
       else {
         const measured = Math.hypot(q[0] - draft[0][0], q[1] - draft[0][1]);
         setDraft([]);
-        const real = prompt(`Measured ${measured.toFixed(3)} m on the plan.\nEnter the real length in metres to rescale the underlay, or cancel to keep it.`);
+        const real = await ask.prompt(`Measured ${measured.toFixed(3)} m on the plan.\nEnter the real length in metres to rescale the underlay, or cancel to keep it.`);
         const v = parseFloat(real ?? '');
         if (v > 0 && measured > 0) rescaleUnderlay(v / measured);
       }
@@ -135,7 +136,7 @@ export function PlanTab() {
     setView(null);
     const auto = parsed.polygons.filter((poly) => polygonArea(poly) > 1 && polygonArea(poly) < 400);
     setMsg(`Imported ${parsed.lines.length} lines (units: ${parsed.unitsName}).`);
-    if (auto.length && confirm(`Found ${auto.length} closed shapes that look like rooms. Create rooms from them?`)) {
+    if (auto.length && await ask.confirm(`Found ${auto.length} closed shapes that look like rooms. Create rooms from them?`)) {
       update((d) => {
         auto.forEach((poly, i) => {
           const label = parsed.labels.find((l) => pointInPolygon(l.at, poly))?.text;
@@ -150,8 +151,8 @@ export function PlanTab() {
   const importImage = async (file: File) => {
     const dataUrl = await readFile(file, 'dataUrl');
     const img = new Image();
-    img.onload = () => {
-      const widthM = parseFloat(prompt('How wide is this plan image in real life (metres)? You can fine-tune with the Measure tool afterwards.', '10') ?? '');
+    img.onload = async () => {
+      const widthM = parseFloat(await ask.prompt('How wide is this plan image in real life (metres)? You can fine-tune with the Measure tool afterwards.', '10') ?? '');
       if (!(widthM > 0)) return;
       const heightM = (widthM * img.height) / img.width;
       update((d) => {
@@ -244,8 +245,8 @@ export function PlanTab() {
             {(plan.lines.length > 0 || plan.image) && (
               <button
                 className="btn ghost sm danger"
-                onClick={() =>
-                  confirm('Remove the imported underlay for this level? Rooms stay.') &&
+                onClick={async () =>
+                  (await ask.confirm('Remove the imported underlay for this level? Rooms stay.', { danger: true })) &&
                   update((d) => {
                     delete d.plans[level];
                   })

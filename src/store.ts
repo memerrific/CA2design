@@ -3,6 +3,7 @@
 
 import { useSyncExternalStore } from 'react';
 import { DEFAULT_COMPANY } from './engine/factory';
+import { ask } from './ui/dialog';
 import type { CompanyProfile, Project } from './engine/model';
 
 const KEY_PROJECTS = 'ca2d.projects.v1';
@@ -38,7 +39,7 @@ function persist() {
     localStorage.setItem(KEY_COMPANY, JSON.stringify(state.company));
   } catch (e) {
     console.warn('Could not save', e);
-    alert('Could not save to this browser (storage full or blocked). Export your project to keep a copy.');
+    void ask.alert('Could not save to this browser (storage full or blocked). Export your project to keep a copy.');
   }
 }
 

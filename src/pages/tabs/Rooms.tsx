@@ -5,6 +5,7 @@ import { newRoom, newWall, uid } from '../../engine/factory';
 import { openingArea, wallGrossArea } from '../../engine/heatloss';
 import type { Boundary, Project, Room, Surface } from '../../engine/model';
 import { Card, fmt, NumField, Select, TextField } from '../../ui/fields';
+import { ask } from '../../ui/dialog';
 import { useProject } from '../ProjectView';
 
 const BOUNDARIES: { value: Boundary; label: string }[] = [
@@ -106,8 +107,8 @@ function RoomEditor({ room: r, idx, onDeleted }: { room: Room; idx: number; onDe
             </button>
             <button
               className="btn ghost sm danger"
-              onClick={() => {
-                if (!confirm(`Delete ${r.name}?`)) return;
+              onClick={async () => {
+                if (!(await ask.confirm(`Delete ${r.name}?`, { danger: true }))) return;
                 update((d) => void d.rooms.splice(idx, 1));
                 onDeleted();
               }}

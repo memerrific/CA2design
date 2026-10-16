@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ProjectsPage } from './pages/Projects';
 import { ProjectView } from './pages/ProjectView';
 import { SettingsPage } from './pages/Settings';
+import { Dialogs } from './ui/dialog';
 import { useStore } from './store';
 
 function useHash() {
@@ -51,6 +52,7 @@ export default function App() {
         </nav>
       </header>
       <main>{page}</main>
+      <Dialogs />
     </div>
   );
 }

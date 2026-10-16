@@ -4,6 +4,7 @@ import { projectHeatLoss } from '../engine/heatloss';
 import type { Project } from '../engine/model';
 import { downloadJson, readFile, store, useStore } from '../store';
 import { fmt } from '../ui/fields';
+import { ask, IS_PREVIEW } from '../ui/dialog';
 import { demoProject } from '../data/demo';
 
 export function ProjectsPage() {
@@ -25,7 +26,7 @@ export function ProjectsPage() {
         store.upsertProject(clash ? { ...p, id: uid(), name: `${p.name} (imported)` } : p);
       }
     } catch (e) {
-      alert(`Could not import: ${(e as Error).message}`);
+      void ask.alert(`Could not import: ${(e as Error).message}`);
     }
   };
 
@@ -41,7 +42,7 @@ export function ProjectsPage() {
             Import project file
             <input type="file" accept=".json,application/json" hidden onChange={(e) => e.target.files?.[0] && importFile(e.target.files[0])} />
           </label>
-          {projects.length > 0 && (
+          {projects.length > 0 && !IS_PREVIEW && (
             <button className="btn ghost" onClick={() => downloadJson(`ca2-designer-backup-${new Date().toISOString().slice(0, 10)}.json`, projects)}>
               Back up all
             </button>
@@ -90,9 +91,11 @@ export function ProjectsPage() {
                   <span>{fmt(hl.totalW / 1000, 2)} kW</span>
                 </div>
                 <div className="card-actions" onClick={(e) => e.stopPropagation()}>
-                  <button className="link" onClick={() => downloadJson(`${p.name.replace(/\W+/g, '-')}.json`, p)}>
-                    Export
-                  </button>
+                  {!IS_PREVIEW && (
+                    <button className="link" onClick={() => downloadJson(`${p.name.replace(/\W+/g, '-')}.json`, p)}>
+                      Export
+                    </button>
+                  )}
                   <button
                     className="link"
                     onClick={() => {
@@ -106,7 +109,7 @@ export function ProjectsPage() {
                   </button>
                   <button
                     className="link danger"
-                    onClick={() => confirm(`Delete “${p.name}”? This cannot be undone.`) && store.deleteProject(p.id)}
+                    onClick={async () => (await ask.confirm(`Delete “${p.name}”? This cannot be undone.`, { danger: true })) && store.deleteProject(p.id)}
                   >
                     Delete
                   </button>
