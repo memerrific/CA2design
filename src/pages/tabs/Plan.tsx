@@ -26,7 +26,7 @@ export function lossColour(wPerM2: number): string {
 /** Warm tint for rooms on the dark canvas: stronger copper for higher W/m². */
 function roomTint(wPerM2: number): string {
   const t = Math.max(0, Math.min(1, wPerM2 / 120));
-  return `rgba(224, 119, 58, ${(0.04 + t * 0.2).toFixed(3)})`;
+  return `rgba(243, 108, 33, ${(0.04 + t * 0.2).toFixed(3)})`;
 }
 
 // ---------- geometry ----------
@@ -730,7 +730,7 @@ export function PlanTab() {
                       <g key={e.id} className="emitter">
                         <polygon
                           points={pl.corners.map((q) => q.join(',')).join(' ')}
-                          fill={e.status === 'new' ? 'rgba(224,119,58,0.35)' : 'rgba(236,228,216,0.18)'}
+                          fill={e.status === 'new' ? 'rgba(243,108,33,0.3)' : 'rgba(23,18,14,0.1)'}
                           stroke={isSel ? 'var(--orange)' : e.status === 'new' ? 'var(--orange)' : 'var(--text)'}
                           strokeWidth={isSel ? sw * 2.4 : sw * 1.3}
                           strokeDasharray={pl.auto ? `${4 * px} ${3 * px}` : undefined}
@@ -761,7 +761,7 @@ export function PlanTab() {
                   <g key={v.id} className="valve">
                     <path
                       d={`M${v.at[0] - s},${v.at[1] - s * 0.7} L${v.at[0] + s},${v.at[1] + s * 0.7} L${v.at[0] + s},${v.at[1] - s * 0.7} L${v.at[0] - s},${v.at[1] + s * 0.7} Z`}
-                      fill="var(--bg)"
+                      fill="#fff"
                       stroke={isSel ? 'var(--orange)' : 'var(--text)'}
                       strokeWidth={sw * 1.4}
                     />

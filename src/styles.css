@@ -1854,268 +1854,58 @@ a.hub-t:focus-visible {
 }
 
 /* =====================================================================
-   Theme: warm dark "blueprint". Overrides the earlier light tokens and the
-   few components that used literal colours. Print sheets reset to light.
+   Theme: original light workspace; the dark chrome (top bar, sidebar, hub)
+   is near-black with a slight brown tinge. Brand orange throughout.
    ===================================================================== */
 :root {
-  --bg: #15120f;
-  --ink: #110e0b;
-  --ink2: #1b1713;
-  --ink3: #2a231d;
-  --paper: #15120f;
-  --card: #1e1a16;
-  --raised: #27211b;
-  --line: #392f27;
-  --line-strong: #4b3f34;
-  --text: #ece4d8;
-  --muted: #a5978a;
-  --muted-ink: #7d7064;
-  --orange: #e0773a;
-  --orange-soft: rgba(224, 119, 58, 0.16);
-  --ok: #7cc79a;
-  --ok-soft: rgba(124, 199, 154, 0.14);
-  --warn: #e0b45a;
-  --warn-soft: rgba(224, 180, 90, 0.14);
-  --bad: #ef8a7c;
-  --bad-soft: rgba(239, 138, 124, 0.14);
-  --info: #8db8e8;
-  --info-soft: rgba(141, 184, 232, 0.14);
-  --grid: rgba(236, 228, 216, 0.05);
-  --plan-line: #8f8273;
-  --flow: #e2574c;
-  --return: #5b8fd6;
-  --serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
-  color-scheme: dark;
+  --ink: #17120e;
+  --ink2: #201a15;
+  --ink3: #2d251e;
+  --raised: #eef0ee;
+  --line-strong: #c4cbc8;
+  --flow: #d63a2c;
+  --return: #2f6fd0;
+  --serif: Inter, 'Segoe UI', Arial, Helvetica, sans-serif;
 }
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: Inter, 'Segoe UI', Arial, Helvetica, sans-serif;
-}
-h1,
-.hub h1,
-.sidebar h2,
-.card h3,
-.hub-start h2,
-.pack-head h2 {
-  font-family: var(--serif);
-  font-weight: 600;
-  letter-spacing: 0.005em;
-}
-h1 {
-  font-size: 2.1rem;
-}
-.card h3 {
-  font-size: 1.3rem;
-}
-.eyebrow {
-  color: var(--orange);
-}
-
-/* Top bar */
 .topbar {
   background: var(--ink);
-  border-bottom: 1px solid var(--line);
-  height: 64px;
 }
-.brand span {
-  font-family: var(--serif);
-  text-transform: none;
-  letter-spacing: 0.01em;
-  font-size: 1.45rem;
-  font-weight: 600;
-  color: var(--text);
+.sidebar {
+  background: var(--ink);
+  /* Dark-panel tokens so the sidebar's own widgets read on the dark background */
+  --text: #ece6df;
+  --muted: #a99d92;
+  --line: rgba(255, 255, 255, 0.1);
+  --line-strong: rgba(255, 255, 255, 0.22);
+  --raised: #2d251e;
+  --card: #201a15;
 }
-.topbar nav a {
-  color: var(--muted);
+.sidebar .side-total {
+  background: var(--ink3);
 }
-.topbar nav a.on,
-.topbar nav a:hover {
-  background: var(--raised);
-  color: var(--text);
-  box-shadow: inset 0 -2px 0 var(--orange);
-}
-
-/* Panels & controls */
-.card,
-.room-list,
-.project-card,
-.handover-editor,
-.empty-state,
-.recent {
-  background: var(--card);
-  border-color: var(--line);
-}
-input[type='text'],
-input[type='number'],
-input:not([type]),
-select,
-textarea {
-  background: var(--raised);
+.sidebar textarea,
+.sidebar select {
+  background: var(--ink2);
   color: var(--text);
   border-color: var(--line-strong);
 }
-input::placeholder,
-textarea::placeholder {
-  color: var(--muted-ink);
+.sidebar nav a.step.on {
+  background: var(--orange);
+  color: #fff;
 }
-.btn.ghost {
-  border-color: var(--line-strong);
-  color: var(--text);
-}
-.btn {
-  border-radius: 8px;
-}
-.link {
+.sidebar nav a.step.on .step-n {
+  background: #fff;
+  border-color: #fff;
   color: var(--orange);
 }
-.seg {
-  border-color: var(--line-strong);
+.sidebar nav a.step.on .step-done {
+  color: #fff;
 }
-.seg button,
-.seg select {
-  background: var(--raised);
-  color: var(--text);
-  border-color: var(--line-strong);
-}
-.seg button.on {
-  background: var(--orange);
-  color: #1a120c;
-}
-.chip {
-  background: var(--raised);
-  border-color: var(--line-strong);
-}
-.chip.on {
-  background: var(--orange-soft);
-}
-.wall {
-  background: var(--raised);
-  border-color: var(--line);
-}
-.opening-row {
-  border-left-color: var(--orange-soft);
-}
-.room-item:hover,
-.recent-row:hover {
-  background: var(--raised);
-}
-.room-item.on {
-  background: var(--orange-soft);
-  color: var(--text);
-}
-.stat {
-  background: var(--card);
-  border-color: var(--line);
-}
-.stats.compact .stat {
-  background: var(--raised);
-}
-.kv span,
-.bar-track,
-.circuit-result,
-.tbl tr.cat td {
-  background: var(--raised);
-}
-.tbl th {
-  color: var(--muted);
-}
-.tbl tr.total td,
-.tbl.summary tr.total th,
-.tbl.summary tr.total td {
-  border-top-color: var(--line-strong);
-}
-.notice {
-  color: var(--warn);
-}
-.notice.info {
-  color: var(--info);
-}
-.modal {
-  background: var(--card);
-  border: 1px solid var(--line);
-}
-.modal-back {
-  background: rgba(5, 4, 3, 0.65);
-}
-.copy-src {
-  background: var(--card);
-  border-color: var(--line);
-}
-.plan-wrap {
-  background: #110e0b;
-  border-color: var(--line);
-}
-.plan-label {
-  fill: var(--text);
-}
-.plan-sub {
-  fill: var(--muted);
-}
-.legend i.ext {
-  background: var(--text);
-}
-
-/* Sidebar */
-.sidebar {
-  background: var(--ink2);
-  border-right: 1px solid var(--line);
-  color: var(--text);
-  top: 64px;
-  height: calc(100vh - 64px);
-}
-.sidebar .back,
-.sidebar .muted,
-.side-total span,
-.side-total small,
-.nav-group h5 {
-  color: var(--muted);
-}
-.side-total {
-  background: var(--raised);
-  border: 1px solid var(--line);
-}
-.sidebar nav a {
-  color: var(--text);
-}
-.sidebar nav a:hover {
-  background: var(--raised);
-}
-.sidebar nav a.on {
-  background: linear-gradient(90deg, rgba(224, 119, 58, 0.28), rgba(224, 119, 58, 0.1));
-  color: var(--text);
-  box-shadow: inset 2px 0 0 var(--orange);
-}
-.sidebar nav a.finish {
-  border-color: var(--orange);
-  background: rgba(224, 119, 58, 0.06);
-}
-.sidebar nav a.finish.on {
-  background: var(--orange);
-  color: #1a120c;
-}
-.sidebar nav a.finish small {
-  color: #f0b48d;
-}
-.project {
-  min-height: calc(100vh - 64px);
-}
-
-/* Hub keeps its look, in the warm palette */
 .hub {
-  background: var(--bg);
-}
-.hub-stats div,
-.hub-recent,
-.hub-t {
-  background: var(--card);
-  border-color: var(--line);
-}
-.hub-start {
-  background: linear-gradient(135deg, #d8703a, #a8502a);
-}
-.hub-btn {
-  background: var(--ink);
+  --text: #f1ece6;
+  --muted: #a99d92;
+  --line: rgba(255, 255, 255, 0.08);
+  --card: #201a15;
 }
 
 /* Print sheets stay light, with their own tokens */
@@ -2368,7 +2158,7 @@ textarea::placeholder {
 }
 .canvas-wrap {
   position: relative;
-  background: #100d0a;
+  background: #fbfaf8;
   border: 1px solid var(--line);
   border-radius: 12px;
   overflow: hidden;
@@ -2418,7 +2208,7 @@ textarea::placeholder {
   fill: var(--muted);
 }
 .note-text {
-  fill: #e9d9b8;
+  fill: var(--text);
   font-style: italic;
 }
 .note-text.on {
