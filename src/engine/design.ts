@@ -62,12 +62,30 @@ export function runLoad(loss: ProjectLoss, run: PipeRun) {
   return run.roomIds.reduce((a, id) => a + Math.max(0, loss.byId.get(id)?.totalW ?? 0), 0);
 }
 
+/** Total length of pipes drawn on the plan and linked to this run, m. */
+export function drawnLength(p: Project, run: PipeRun): number {
+  let total = 0;
+  for (const pl of Object.values(p.plans)) {
+    for (const pipe of pl.pipes ?? []) {
+      if (pipe.runId !== run.id) continue;
+      for (let i = 1; i < pipe.pts.length; i++) total += Math.hypot(pipe.pts[i][0] - pipe.pts[i - 1][0], pipe.pts[i][1] - pipe.pts[i - 1][1]);
+    }
+  }
+  return total;
+}
+
+/** Length used for the run: the drawn length when pipes are linked (unless switched off), else the typed length. */
+export function runLength(p: Project, run: PipeRun): number {
+  const drawn = drawnLength(p, run);
+  return drawn > 0 && run.useDrawn !== false ? drawn : run.lengthM;
+}
+
 export function analyseRun(p: Project, loss: ProjectLoss, run: PipeRun) {
   const s = p.settings;
   const mean = s.flowTemp - s.deltaT / 2;
   const load = runLoad(loss, run);
   const q = flowFromHeat(load, s.deltaT, s.fluid, mean);
   const size = run.sizeId ? pipeSize(run.sizeId) : autoSize(run.material, q, s.fluid, mean);
-  const res = size ? analysePipe({ sizeId: size.id, lengthM: run.lengthM, fittingsAllowancePct: run.fittingsPct, flowM3s: q, fluid: s.fluid, meanTemp: mean }) : null;
+  const res = size ? analysePipe({ sizeId: size.id, lengthM: runLength(p, run), fittingsAllowancePct: run.fittingsPct, flowM3s: q, fluid: s.fluid, meanTemp: mean }) : null;
   return { load, q, size, res };
 }

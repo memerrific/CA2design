@@ -61,6 +61,12 @@ export interface Emitter {
   // custom (e.g. fan coil, towel rail) – rated output at ΔT50
   ratedDt50?: number;
   quantity: number;
+  // Position on the floor plan: which wall of the room, and distance (m) from
+  // that wall's start corner to the emitter's centre. Unset = not placed.
+  wallIndex?: number;
+  offsetM?: number;
+  flowSizeId?: string;
+  returnSizeId?: string;
 }
 
 export interface UfhDesign {
@@ -103,6 +109,7 @@ export interface PipeRun {
   loadW: number; // heat carried; 0 = take from linked rooms
   roomIds: string[];
   isIndex: boolean; // part of the index circuit
+  useDrawn?: boolean; // take the length from pipes drawn on the plan (default when any are linked)
 }
 
 export interface Valve {
@@ -150,10 +157,33 @@ export interface HandoverSection {
   body?: string; // for text sections
 }
 
+export interface PlanPipe {
+  id: string;
+  kind: 'flow' | 'return';
+  pts: Pt[]; // m, plan coordinates
+  sizeId?: string;
+  runId?: string; // pipe run this drawn length counts towards
+}
+
+export interface PlanNote {
+  id: string;
+  at: Pt;
+  text: string;
+}
+
+export interface PlanValve {
+  id: string;
+  at: Pt;
+  name: string;
+}
+
 export interface PlanUnderlay {
   // Lines (m) from a DXF import and an optional raster image.
   lines: [Pt, Pt][];
   labels: { at: Pt; text: string }[];
+  pipes?: PlanPipe[];
+  notes?: PlanNote[];
+  valves?: PlanValve[];
   image?: { dataUrl: string; x: number; y: number; widthM: number; heightM: number };
 }
 
@@ -262,6 +292,8 @@ export interface Project {
   handover: HandoverSection[];
   plans: Record<string, PlanUnderlay>; // keyed by level
   pricing?: Pricing; // absent on projects saved before pricing existed
+  photo?: string; // downscaled property photo (data URL)
+  northDeg?: number; // plan rotation of north, degrees clockwise
   notes: string;
 }
 

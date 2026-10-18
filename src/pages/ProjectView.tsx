@@ -20,6 +20,8 @@ import { PoolDesignTab, PoolOverviewTab, PoolSheetTab, poolSummary } from './too
 import { DhwDesignTab, DhwOverviewTab, DhwSheetTab, dhwSummary } from './tools/DhwTabs';
 import { ReportTab } from './tabs/Handover';
 import { ask } from '../ui/dialog';
+import { downscaleImage } from '../ui/image';
+import { PlanSidePanels, stepDone } from './SidePanels';
 
 interface Ctx {
   project: Project;
@@ -149,24 +151,58 @@ export function ProjectView({ project, tab }: { project: Project; tab: string })
           <a href={`#/m/${module}`} className="back">
             ← {info?.name}
           </a>
-          <h2>{project.name}</h2>
-          <p className="muted small">{project.customer.name || 'No customer'}</p>
+          <div className="proj-card">
+            {project.photo ? (
+              <img src={project.photo} alt="" />
+            ) : (
+              <label className="proj-photo-add">
+                Add property photo
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={async (e) => {
+                    const f = e.target.files?.[0];
+                    if (f) {
+                      const url = await downscaleImage(f, 900);
+                      ctx.update((d) => void (d.photo = url));
+                    }
+                  }}
+                />
+              </label>
+            )}
+            <h2>{project.name}</h2>
+            <p className="muted small">{[project.customer.address.split('\n')[0], project.customer.postcode].filter(Boolean).join(', ') || project.customer.name || 'No address yet'}</p>
+          </div>
           <div className="side-total">
             <span>{summary.label}</span>
             <strong>{summary.value === undefined ? summary.sub.split(' · ')[0] : `${fmt(summary.value, 2)} kW`}</strong>
             <small>{summary.value === undefined ? summary.sub.split(' · ').slice(1).join(' · ') : summary.sub}</small>
           </div>
           <nav>
-            {setup.nav.map((g) => (
-              <div key={g.group} className="nav-group">
-                <h5>{g.group}</h5>
-                {g.tabs.map((x) => (
-                  <a key={x.id} href={`#/p/${project.id}/${x.id}`} className={tab === x.id ? 'on' : ''}>
-                    {x.label}
-                  </a>
-                ))}
-              </div>
-            ))}
+            {(() => {
+              let n = 0;
+              return setup.nav.map((g) => (
+                <div key={g.group} className="nav-group">
+                  {setup.nav.length > 1 && <h5>{g.group}</h5>}
+                  {g.tabs.map((x) => {
+                    n++;
+                    const done = stepDone(x.id, project, loss);
+                    return (
+                      <a key={x.id} href={`#/p/${project.id}/${x.id}`} className={`step ${tab === x.id ? 'on' : ''}`}>
+                        <span className="step-n">{n}</span>
+                        <span className="step-l">{x.label}</span>
+                        {done && (
+                          <span className="step-done" aria-label="done">
+                            ✓
+                          </span>
+                        )}
+                      </a>
+                    );
+                  })}
+                </div>
+              ));
+            })()}
             <a href={`#/p/${project.id}/${setup.finish.id}`} className={`finish ${tab === setup.finish.id ? 'on' : ''}`}>
               <span className="tick" aria-hidden="true">
                 ✓
@@ -182,6 +218,7 @@ export function ProjectView({ project, tab }: { project: Project; tab: string })
               </button>
             )}
           </nav>
+          {tab === 'plan' && <PlanSidePanels />}
         </aside>
         <div className="content">{setup.body(tab)}</div>
       </div>

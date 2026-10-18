@@ -143,6 +143,7 @@ function PackSection({ s }: { s: HandoverSection }) {
       return (
         <section className="sheet cover">
           <img className="cover-logo" src={company.logoDataUrl || './logo.png'} alt={company.name} />
+          {p.photo && <img className="cover-photo" src={p.photo} alt="The property" />}
           <p className="eyebrow">{company.tagline}</p>
           <h1>{s.title === 'Cover' ? 'Heating System Handover Pack' : s.title}</h1>
           <h3>{p.systemType}</h3>

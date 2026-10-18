@@ -2,7 +2,7 @@
 // Every generated line has a stable key so hand edits (overrides) and the
 // company price list survive design changes.
 
-import { analyseRun, ufhOutput } from './design';
+import { analyseRun, runLength, ufhOutput } from './design';
 import { RAD_TYPES } from './emitters';
 import type { ProjectLoss } from './heatloss';
 import type { LineOverride, PriceLine, Pricing, Project, Room } from './model';
@@ -64,11 +64,12 @@ export function buildTakeoff(p: Project, loss: ProjectLoss): TakeoffLine[] {
   // Pipework, from designed runs (sizes as auto-sized or chosen).
   for (const run of p.pipes) {
     const a = analyseRun(p, loss, run);
-    if (!a.size || run.lengthM <= 0) continue;
+    const len = runLength(p, run);
+    if (!a.size || len <= 0) continue;
     const label = `${MATERIAL_NAMES[run.material]} ${a.size.label}`;
-    add({ key: `pipe:${a.size.id}`, category: 'Pipework', description: `${label} pipe`, qty: run.lengthM, unit: 'm', source: `${run.name} ${run.lengthM} m` });
+    add({ key: `pipe:${a.size.id}`, category: 'Pipework', description: `${label} pipe`, qty: len, unit: 'm', source: `${run.name} ${Math.round(len * 10) / 10} m${len !== run.lengthM ? ' (drawn)' : ''}` });
     if (pr.includeInsulation) {
-      add({ key: `lag:${a.size.id}`, category: 'Pipe insulation', description: `Pipe insulation to suit ${a.size.label} ${run.material === 'copper' ? 'copper' : MATERIAL_NAMES[run.material]}`, qty: run.lengthM, unit: 'm', source: run.name });
+      add({ key: `lag:${a.size.id}`, category: 'Pipe insulation', description: `Pipe insulation to suit ${a.size.label} ${run.material === 'copper' ? 'copper' : MATERIAL_NAMES[run.material]}`, qty: len, unit: 'm', source: run.name });
     }
   }
 

@@ -11,7 +11,8 @@ import {
   type UsagePattern,
 } from '../../engine/dhw';
 import type { DhwProject, Project } from '../../engine/model';
-import { readFile, useStore } from '../../store';
+import { useStore } from '../../store';
+import { downscaleImage } from '../../ui/image';
 import { defaultDhw } from '../../data/dhwDefaults';
 import { Card, fmt, NumField, Pill, Select, Stat, TextField } from '../../ui/fields';
 import { useProject } from '../ProjectView';
@@ -62,23 +63,6 @@ export const dhwSummary = (p: Project) => {
   const r = analyseDhw({ ...defaultDhw(), ...p.dhw });
   return { label: 'Recommended cylinder', value: r.demand.recommendedSizeL / 1000, sub: `${r.demand.recommendedSizeL} L · min ${fmt(r.priority.minSourceKw, 1)} kW for target reheat`, unit: 'm³' };
 };
-
-/** Shrink a photo before storing it, so the browser's storage doesn't fill up. */
-async function downscale(file: File, maxPx = 1200): Promise<string> {
-  const src = await readFile(file, 'dataUrl');
-  const img = new Image();
-  await new Promise((res, rej) => {
-    img.onload = res;
-    img.onerror = rej;
-    img.src = src;
-  });
-  const k = Math.min(1, maxPx / Math.max(img.width, img.height));
-  const c = document.createElement('canvas');
-  c.width = Math.round(img.width * k);
-  c.height = Math.round(img.height * k);
-  c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height);
-  return c.toDataURL('image/jpeg', 0.75);
-}
 
 export function DhwOverviewTab() {
   return (
@@ -267,7 +251,7 @@ export function DhwDesignTab() {
                 onChange={async (e) => {
                   const f = e.target.files?.[0];
                   if (f) {
-                    const url = await downscale(f);
+                    const url = await downscaleImage(f);
                     set((p) => void p.photos.push(url));
                   }
                 }}

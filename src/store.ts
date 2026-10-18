@@ -40,6 +40,12 @@ function load(): State {
 }
 
 let state: State = load();
+const histories = new Map<string, { undo: Project[]; redo: Project[] }>();
+function history(id: string) {
+  let h = histories.get(id);
+  if (!h) histories.set(id, (h = { undo: [], redo: [] }));
+  return h;
+}
 const listeners = new Set<() => void>();
 
 function persist() {
@@ -64,15 +70,43 @@ export const store = {
     return () => listeners.delete(l);
   },
   get: () => state,
-  upsertProject(p: Project) {
+  upsertProject(p: Project, opts: { history?: boolean } = {}) {
     const updated = { ...p, updatedAt: new Date().toISOString() };
-    const exists = state.projects.some((x) => x.id === p.id);
+    const prev = state.projects.find((x) => x.id === p.id);
+    if (prev && opts.history !== false) {
+      const h = history(p.id);
+      h.undo.push(prev);
+      if (h.undo.length > 60) h.undo.shift();
+      h.redo = [];
+    }
+    const exists = !!prev;
     state = {
       ...state,
       projects: exists ? state.projects.map((x) => (x.id === p.id ? updated : x)) : [updated, ...state.projects],
     };
     emit();
   },
+  /** Step back to the previous saved version of a project (this session only). */
+  undo(id: string) {
+    const h = history(id);
+    const prev = h.undo.pop();
+    const cur = state.projects.find((x) => x.id === id);
+    if (!prev || !cur) return;
+    h.redo.push(cur);
+    state = { ...state, projects: state.projects.map((x) => (x.id === id ? prev : x)) };
+    emit();
+  },
+  redo(id: string) {
+    const h = history(id);
+    const next = h.redo.pop();
+    const cur = state.projects.find((x) => x.id === id);
+    if (!next || !cur) return;
+    h.undo.push(cur);
+    state = { ...state, projects: state.projects.map((x) => (x.id === id ? next : x)) };
+    emit();
+  },
+  canUndo: (id: string) => history(id).undo.length > 0,
+  canRedo: (id: string) => history(id).redo.length > 0,
   deleteProject(id: string) {
     state = { ...state, projects: state.projects.filter((p) => p.id !== id) };
     emit();
