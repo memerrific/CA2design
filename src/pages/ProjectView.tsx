@@ -15,7 +15,8 @@ import { HandoverTab } from './tabs/Handover';
 import { MerchantTab } from './tabs/Merchant';
 import { PricingTab } from './tabs/Pricing';
 import { PlantDesignTab, PlantHeaderTab, PlantOverviewTab, PlantSheetTab, plantKwSummary } from './plant/PlantTabs';
-import { moduleInfo, moduleOf } from '../modules';
+import { moduleInfo, moduleOf, STAGES, stageOf } from '../modules';
+import { Icon } from '../ui/icons';
 import { PoolDesignTab, PoolOverviewTab, PoolSheetTab, poolSummary } from './tools/PoolTabs';
 import { DhwDesignTab, DhwOverviewTab, DhwSheetTab, dhwSummary } from './tools/DhwTabs';
 import { ReportTab } from './tabs/Handover';
@@ -144,83 +145,86 @@ export function ProjectView({ project, tab }: { project: Project; tab: string })
     ctx.update((d) => void (d.module = 'heating'));
   };
 
+  const address = [project.customer.address.split('\n')[0], project.customer.postcode].filter(Boolean).join(', ');
+  const total = summary.value === undefined ? summary.sub.split(' · ')[0] : `${fmt(summary.value, 2)} kW`;
+  let n = 0;
+
   return (
     <ProjectCtx.Provider value={ctx}>
       <div className="project">
-        <aside className="sidebar no-print">
-          <a href={`#/m/${module}`} className="back">
-            ← {info?.name}
+        <header className="pj-head no-print">
+          <a href={`#/m/${module}`} className="pj-back" aria-label={`Back to ${info?.name}`} title={`Back to ${info?.name}`}>
+            <Icon name="back" />
           </a>
-          <div className="proj-card">
-            {project.photo ? (
-              <img src={project.photo} alt="" />
-            ) : (
-              <label className="proj-photo-add">
-                Add property photo
-                <input
-                  type="file"
-                  accept="image/*"
-                  hidden
-                  onChange={async (e) => {
-                    const f = e.target.files?.[0];
-                    if (f) {
-                      const url = await downscaleImage(f, 900);
-                      ctx.update((d) => void (d.photo = url));
-                    }
-                  }}
-                />
-              </label>
-            )}
-            <h2>{project.name}</h2>
-            <p className="muted small">{[project.customer.address.split('\n')[0], project.customer.postcode].filter(Boolean).join(', ') || project.customer.name || 'No address yet'}</p>
+          <label className={`pj-photo ${project.photo ? '' : 'empty'}`} title={project.photo ? 'Change property photo' : 'Add property photo'}>
+            {project.photo ? <img src={project.photo} alt="" /> : <Icon name="heating" />}
+            <input
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={async (e) => {
+                const f = e.target.files?.[0];
+                if (f) {
+                  const url = await downscaleImage(f, 900);
+                  ctx.update((d) => void (d.photo = url));
+                }
+              }}
+            />
+          </label>
+          <div className="pj-title">
+            <h1>{project.name}</h1>
+            <p>{address || project.customer.name || 'No address yet'}</p>
           </div>
-          <div className="side-total">
-            <span>{summary.label}</span>
-            <strong>{summary.value === undefined ? summary.sub.split(' · ')[0] : `${fmt(summary.value, 2)} kW`}</strong>
-            <small>{summary.value === undefined ? summary.sub.split(' · ').slice(1).join(' · ') : summary.sub}</small>
+          <div className="pj-total" title={summary.sub}>
+            <small>{summary.label}</small>
+            <b>{total}</b>
           </div>
-          <nav>
-            {(() => {
-              let n = 0;
-              return setup.nav.map((g) => (
-                <div key={g.group} className="nav-group">
-                  {setup.nav.length > 1 && <h5>{g.group}</h5>}
-                  {g.tabs.map((x) => {
-                    n++;
-                    const done = stepDone(x.id, project, loss);
-                    return (
-                      <a key={x.id} href={`#/p/${project.id}/${x.id}`} className={`step ${tab === x.id ? 'on' : ''}`}>
-                        <span className="step-n">{n}</span>
-                        <span className="step-l">{x.label}</span>
-                        {done && (
-                          <span className="step-done" aria-label="done">
-                            ✓
-                          </span>
-                        )}
-                      </a>
-                    );
-                  })}
-                </div>
-              ));
-            })()}
-            <a href={`#/p/${project.id}/${setup.finish.id}`} className={`finish ${tab === setup.finish.id ? 'on' : ''}`}>
-              <span className="tick" aria-hidden="true">
-                ✓
-              </span>
-              <span>
-                {setup.finish.label}
-                <small>{setup.finish.sub}</small>
-              </span>
-            </a>
+          <div className="pj-actions">
+            <select className="pj-stage" value={stageOf(project)} onChange={(e) => ctx.update((d) => void (d.stage = e.target.value))} aria-label="Job stage">
+              {STAGES.map((st) => (
+                <option key={st.id} value={st.id}>
+                  {st.name}
+                </option>
+              ))}
+              <option value="archived">Archived</option>
+            </select>
             {info?.partOfProperty && (
-              <button className="upgrade" onClick={upgrade}>
-                Open as whole property project →
+              <button className="btn-line" onClick={upgrade}>
+                Open as whole property
               </button>
             )}
-          </nav>
-          {tab === 'plan' && <PlanSidePanels />}
-        </aside>
-        <div className="content">{setup.body(tab)}</div>
+            <a href={`#/p/${project.id}/${setup.finish.id}`} className={`btn-black ${tab === setup.finish.id ? 'on' : ''}`} title={setup.finish.sub}>
+              <Icon name="download" size={16} /> {setup.finish.label}
+            </a>
+          </div>
+        </header>
+        <nav className="pj-tabs no-print">
+          {setup.nav.map((g) => (
+            <div key={g.group} className="pj-group">
+              {setup.nav.length > 1 && <span className="pj-group-l">{g.group}</span>}
+              {g.tabs.map((x) => {
+                n++;
+                const done = stepDone(x.id, project, loss);
+                return (
+                  <a key={x.id} href={`#/p/${project.id}/${x.id}`} className={`pj-tab ${tab === x.id ? 'on' : ''} ${done ? 'done' : ''}`}>
+                    <span className="pj-n">{done ? '✓' : n}</span>
+                    {x.label}
+                  </a>
+                );
+              })}
+            </div>
+          ))}
+        </nav>
+        {tab === 'plan' ? (
+          <div className="pj-plan">
+            <aside className="pj-plan-side no-print">
+              <PlanSidePanels />
+            </aside>
+            <div className="content">{setup.body(tab)}</div>
+          </div>
+        ) : (
+          <div className="content">{setup.body(tab)}</div>
+        )}
       </div>
     </ProjectCtx.Provider>
   );

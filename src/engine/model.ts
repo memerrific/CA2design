@@ -271,6 +271,7 @@ export type ModuleId = 'heating' | 'heatloss' | 'survey' | 'materials' | 'plantr
 export interface Project {
   id: string;
   module?: ModuleId; // absent = 'heating' (projects made before modules existed)
+  stage?: string; // job stage on the projects board; absent = 'enquiry'
   plant?: PlantRoom;
   pool?: PoolInputs;
   dhw?: DhwProject;
