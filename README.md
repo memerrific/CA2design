@@ -16,7 +16,11 @@ and can be exported/imported as JSON. Nothing is sent to a server.
 | Underfloor | BS EN 1264-2 wet screed output by pipe centres, floor covering, screed depth; floor surface temperature limits; loop count/length; flow-meter setting per loop; manifold totals. |
 | Pipework & Kv | Flow from load and ΔT, Darcy–Weisbach pressure drop (copper, PE-X, MLCP, steel, ABS/PVC pool pipe), auto-sizing to velocity/Pa/m limits, index circuit pump head, Kv calculator and valve pressure drops. Water or glycol mixes. |
 | Equipment | Plant list with make/model/serial/location (heat pumps, oil boilers, cascades, pool heat pumps, cylinders, PV, AC, MVHR…). |
+| Plant room | Low loss header design from the loads leaving the plant room: circuit flows, pipe sizes, pump duties, Kv and valve authority, primary/secondary flow balance and resulting temperatures, header bore. Printable design sheet. |
+| Pricing | Materials takeoff from the design, company price list, sundries, markup, labour, VAT; merchant request for quotation (PDF/CSV/JSON). |
 | Handover pack | Branded A4 pack: cover, summary, coloured floor plans, heat loss, radiator, UFH, pipework, valves, equipment, commissioning record with sign-off, and your own text sections. Reorder, rename, toggle, then Print / save PDF. |
+
+Where every method comes from, and how far it has been checked, is listed in the app under **Methods & sources** (`src/pages/Methods.tsx`).
 
 All calculations are design aids; a competent person should check inputs before sign-off.
 Radiator outputs use generic panel data. Use the manufacturer's tables for the final selection.

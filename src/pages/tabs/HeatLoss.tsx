@@ -1,4 +1,4 @@
-import { Card, fmt, Stat } from '../../ui/fields';
+import { Card, fmt, Pill, Stat } from '../../ui/fields';
 import { useProject } from '../ProjectView';
 
 export function HeatLossTab() {
@@ -22,6 +22,17 @@ export function HeatLossTab() {
         <Stat label="Average" value={fmt(wm2)} unit="W/m²" tone={wm2 > 100 ? 'bad' : wm2 > 60 ? 'warn' : 'ok'} />
         <Stat label="Heated floor area" value={fmt(loss.area, 1)} unit="m²" />
       </div>
+
+      {p.rooms.some((r) => r.height > 4) && (
+        <p className="notice">
+          Rooms over 4 m high: {p.rooms.filter((r) => r.height > 4).map((r) => r.name).join(', ')}. The height corrections BS EN 12831-1 applies to tall spaces
+          are not in this app yet, so the heat loss for these rooms is likely too low. Get this checked independently.
+        </p>
+      )}
+      <p className="notice info">
+        Ventilation uses air changes per room (the older CIBSE method). The current MCS calculator uses the BS EN 12831-1 ventilation method, which can give
+        noticeably less ventilation loss in older houses. See <a href="#/methods">Methods & sources</a>.
+      </p>
 
       <Card title="Heat source sizing">
         <p>
@@ -53,6 +64,12 @@ export function HeatLossTab() {
                 <tr key={r.id}>
                   <td>
                     <a href={`#/p/${p.id}/rooms`}>{r.name}</a>
+                    {r.height > 4 && (
+                      <>
+                        {' '}
+                        <Pill tone="warn">over 4 m</Pill>
+                      </>
+                    )}
                   </td>
                   <td>{r.level}</td>
                   <td className="r">{r.designTemp}</td>

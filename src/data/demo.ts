@@ -1,6 +1,7 @@
 import { detectAdjacency, newProject, roomFromPolygon, uid } from '../engine/factory';
 import type { Pt } from '../engine/model';
 import { roomType } from './rooms';
+import { defaultPlantRoom } from '../engine/plant';
 
 /** A small example semi so the app can be explored without a survey. */
 export function demoProject() {
@@ -87,5 +88,38 @@ export function demoProject() {
     { id: uid(), name: 'Primary flow & return', material: 'copper', sizeId: '', lengthM: 16, fittingsPct: 30, loadW: 0, roomIds: rooms.map((r) => r.id), isIndex: true },
     { id: uid(), name: 'First floor branch', material: 'copper', sizeId: '', lengthM: 12, fittingsPct: 30, loadW: 0, roomIds: rooms.filter((r) => r.level === 'First').map((r) => r.id), isIndex: true },
   ];
+  return p;
+}
+
+/** Example plant room: boiler cascade on a low loss header serving cylinders and a pool. */
+export function demoPlantRoom() {
+  const p = newProject('Example: boiler cascade, 5 cylinders + pool');
+  p.module = 'plantroom';
+  p.reference = 'DEMO-PR-01';
+  p.engineer = 'Callum';
+  p.systemType = 'Multi-boiler plant room';
+  p.settings.flowTemp = 80;
+  p.settings.deltaT = 20;
+  const plant = defaultPlantRoom();
+  plant.sources = [{ id: uid(), name: 'Wall-hung boilers', kind: 'boiler', count: 3, outputKw: 30, flowTemp: 80, deltaT: 20, minFlowLpm: 0, notes: '' }];
+  const cyl = (n: number) => ({
+    id: uid(),
+    name: `Cylinder ${n}`,
+    type: 'dhw' as const,
+    loadKw: 10,
+    flowTemp: 80,
+    deltaT: 20,
+    diversityPct: 100,
+    material: 'copper' as const,
+    sizeId: '',
+    lengthM: 12,
+    fittingsPct: 40,
+    terminalDropKpa: 8,
+    valveKv: 0,
+    notes: '',
+  });
+  plant.circuits = [1, 2, 3, 4, 5].map(cyl);
+  plant.circuits.push({ ...cyl(6), name: 'Pool plate heat exchanger', type: 'pool', loadKw: 20, lengthM: 30, terminalDropKpa: 20, valveKv: 2.5 });
+  p.plant = plant;
   return p;
 }

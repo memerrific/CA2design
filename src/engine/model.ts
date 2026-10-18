@@ -1,6 +1,7 @@
 import type { FluidId } from './fluid';
 import type { Fabric } from '../data/fabrics';
 import type { PipeMaterial } from './pipes';
+import type { PlantRoom } from './plant';
 
 export type Pt = [number, number];
 
@@ -212,8 +213,12 @@ export interface Customer {
   email: string;
 }
 
+export type ModuleId = 'heating' | 'plantroom';
+
 export interface Project {
   id: string;
+  module?: ModuleId; // absent = 'heating' (projects made before modules existed)
+  plant?: PlantRoom;
   name: string;
   reference: string;
   systemType: string;

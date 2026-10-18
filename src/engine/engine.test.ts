@@ -146,3 +146,31 @@ describe('materials takeoff and pricing', () => {
     expect(csv).not.toContain('Radiator valve set');
   });
 });
+
+describe('plant room', () => {
+  it('sizes flows, header and mixing for a boiler cascade', async () => {
+    const { analysePlant, defaultPlantRoom } = await import('./plant');
+    const plant = defaultPlantRoom();
+    plant.sources = [{ id: 'b', name: 'Boilers', kind: 'boiler', count: 3, outputKw: 30, flowTemp: 80, deltaT: 20, minFlowLpm: 0, notes: '' }];
+    const circ = (id: string, kw: number) => ({ id, name: id, type: 'dhw' as const, loadKw: kw, flowTemp: 80, deltaT: 20, diversityPct: 100, material: 'copper' as const, sizeId: '', lengthM: 20, fittingsPct: 30, terminalDropKpa: 10, valveKv: 0, notes: '' });
+    plant.circuits = [circ('c1', 30), circ('c2', 30), circ('c3', 10)];
+    const r = analysePlant(plant, 'water');
+    expect(r.connectedKw).toBe(70);
+    expect(r.installedKw).toBe(90);
+    // Primary 90 kW vs secondary 70 kW at the same ΔT → ratio ≈ 90/70.
+    expect(r.primaryRatio).toBeCloseTo(90 / 70, 2);
+    // Surplus primary mixes back: return = (70·60 + 20·80)/90.
+    expect(r.returnTempToSources).toBeCloseTo((70 * 60 + 20 * 80) / 90, 0);
+    expect(r.secondaryFlowTempAtHeader).toBeCloseTo(80, 1);
+    // Header id for 0.2 m/s: sqrt(4Q/(π·0.2)).
+    expect(r.headerIdForVelocityMm).toBeCloseTo(Math.sqrt((4 * r.primaryM3s) / (Math.PI * 0.2)) * 1000, 6);
+    expect(r.headerIdRequiredMm).toBeGreaterThanOrEqual(r.headerIdFor3dMm);
+    expect(r.circuits[0].totalKpa).toBeGreaterThan(10);
+
+    // Undersized primary: secondary pulls return water through, flow temp drops.
+    plant.sources[0].count = 2;
+    const r2 = analysePlant(plant, 'water');
+    expect(r2.secondaryFlowTempAtHeader).toBeCloseTo((60 * 80 + 10 * 60) / 70, 0);
+    expect(r2.warnings.some((w) => w.includes('below the diversified load'))).toBe(true);
+  });
+});

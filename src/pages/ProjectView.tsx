@@ -14,6 +14,8 @@ import { EquipmentTab } from './tabs/Equipment';
 import { HandoverTab } from './tabs/Handover';
 import { MerchantTab } from './tabs/Merchant';
 import { PricingTab } from './tabs/Pricing';
+import { PlantDesignTab, PlantHeaderTab, PlantOverviewTab, PlantSheetTab, plantKwSummary } from './plant/PlantTabs';
+import { moduleInfo, moduleOf } from '../modules';
 
 interface Ctx {
   project: Project;
@@ -25,7 +27,20 @@ interface Ctx {
 const ProjectCtx = createContext<Ctx | null>(null);
 export const useProject = () => useContext(ProjectCtx)!;
 
-const NAV: { group: string; tabs: { id: string; label: string }[] }[] = [
+type Nav = { group: string; tabs: { id: string; label: string }[] }[];
+
+const PLANT_NAV: Nav = [
+  {
+    group: 'Plant room',
+    tabs: [
+      { id: 'overview', label: 'Overview' },
+      { id: 'plant', label: 'Sources & circuits' },
+      { id: 'header', label: 'Header & pumps' },
+    ],
+  },
+];
+
+const NAV: Nav = [
   {
     group: 'Survey',
     tabs: [
@@ -65,7 +80,27 @@ export function ProjectView({ project, tab }: { project: Project; tab: string })
     },
   };
 
+  const module = moduleOf(project);
+  const isPlant = module === 'plantroom';
+  const nav = isPlant ? PLANT_NAV : NAV;
+  const finish = isPlant ? { id: 'sheet', label: 'Design sheet', sub: 'Print for the job' } : { id: 'handover', label: 'Handover pack', sub: 'End of job' };
+  const summary = isPlant
+    ? plantKwSummary(project)
+    : { label: 'Design heat loss', value: loss.totalW / 1000, sub: `${project.rooms.length} rooms · ${fmt(loss.area, 0)} m² · ${project.settings.externalTemp} °C outside` };
+
   const body = (() => {
+    if (isPlant) {
+      switch (tab) {
+        case 'plant':
+          return <PlantDesignTab />;
+        case 'header':
+          return <PlantHeaderTab />;
+        case 'sheet':
+          return <PlantSheetTab />;
+        default:
+          return <PlantOverviewTab />;
+      }
+    }
     switch (tab) {
       case 'plan':
         return <PlanTab />;
@@ -96,20 +131,18 @@ export function ProjectView({ project, tab }: { project: Project; tab: string })
     <ProjectCtx.Provider value={ctx}>
       <div className="project">
         <aside className="sidebar no-print">
-          <a href="#/" className="back">
-            ← All projects
+          <a href={`#/m/${module}`} className="back">
+            ← {moduleInfo(module)?.name}
           </a>
           <h2>{project.name}</h2>
           <p className="muted small">{project.customer.name || 'No customer'}</p>
           <div className="side-total">
-            <span>Design heat loss</span>
-            <strong>{fmt(loss.totalW / 1000, 2)} kW</strong>
-            <small>
-              {project.rooms.length} rooms · {fmt(loss.area, 0)} m² · {project.settings.externalTemp} °C outside
-            </small>
+            <span>{summary.label}</span>
+            <strong>{fmt(summary.value, 2)} kW</strong>
+            <small>{summary.sub}</small>
           </div>
           <nav>
-            {NAV.map((g) => (
+            {nav.map((g) => (
               <div key={g.group} className="nav-group">
                 <h5>{g.group}</h5>
                 {g.tabs.map((t) => (
@@ -119,13 +152,13 @@ export function ProjectView({ project, tab }: { project: Project; tab: string })
                 ))}
               </div>
             ))}
-            <a href={`#/p/${project.id}/handover`} className={`finish ${tab === 'handover' ? 'on' : ''}`}>
+            <a href={`#/p/${project.id}/${finish.id}`} className={`finish ${tab === finish.id ? 'on' : ''}`}>
               <span className="tick" aria-hidden="true">
                 ✓
               </span>
               <span>
-                Handover pack
-                <small>End of job</small>
+                {finish.label}
+                <small>{finish.sub}</small>
               </span>
             </a>
           </nav>

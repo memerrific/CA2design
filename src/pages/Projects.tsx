@@ -5,13 +5,25 @@ import type { Project } from '../engine/model';
 import { downloadJson, readFile, store, useStore } from '../store';
 import { fmt } from '../ui/fields';
 import { ask, IS_PREVIEW } from '../ui/dialog';
-import { demoProject } from '../data/demo';
+import { demoPlantRoom, demoProject } from '../data/demo';
+import { analysePlant, defaultPlantRoom } from '../engine/plant';
+import type { ModuleId } from '../engine/model';
+import { moduleInfo, moduleOf } from '../modules';
 
-export function ProjectsPage() {
-  const { projects } = useStore();
+export function ProjectsPage({ module }: { module: ModuleId }) {
+  const { projects: all } = useStore();
+  const projects = all.filter((p) => moduleOf(p) === module);
+  const info = moduleInfo(module)!;
 
   const create = () => {
     const p = newProject('New project');
+    p.module = module;
+    if (module === 'plantroom') {
+      p.plant = defaultPlantRoom();
+      p.systemType = 'Multi-boiler plant room';
+      p.settings.flowTemp = 80;
+      p.settings.deltaT = 20;
+    }
     store.upsertProject(p);
     go(`p/${p.id}/overview`);
   };
@@ -22,7 +34,7 @@ export function ProjectsPage() {
       const list: Project[] = Array.isArray(data) ? data : [data];
       for (const p of list) {
         if (!p || !p.id || !Array.isArray(p.rooms)) throw new Error('Not a CA2 Designer project file');
-        const clash = projects.some((x) => x.id === p.id);
+        const clash = all.some((x) => x.id === p.id);
         store.upsertProject(clash ? { ...p, id: uid(), name: `${p.name} (imported)` } : p);
       }
     } catch (e) {
@@ -34,8 +46,10 @@ export function ProjectsPage() {
     <div className="page">
       <div className="page-head">
         <div>
-          <p className="eyebrow">Projects</p>
-          <h1>Heating designs & handover packs</h1>
+          <p className="eyebrow">
+            <a href="#/">Home</a> / Projects
+          </p>
+          <h1>{info.name}</h1>
         </div>
         <div className="actions">
           <label className="btn ghost">
@@ -56,9 +70,7 @@ export function ProjectsPage() {
       {projects.length === 0 ? (
         <div className="empty-state">
           <h2>No projects yet</h2>
-          <p>
-            Start a project, add rooms by hand or import a Polycam floor plan (DXF), then work through heat loss, emitters,
-            underfloor, pipework and the handover pack.
+          <p>{info.blurb}
           </p>
           <div className="actions">
             <button className="btn" onClick={create}>
@@ -67,12 +79,12 @@ export function ProjectsPage() {
             <button
               className="btn ghost"
               onClick={() => {
-                const p = demoProject();
+                const p = module === 'plantroom' ? demoPlantRoom() : demoProject();
                 store.upsertProject(p);
                 go(`p/${p.id}/overview`);
               }}
             >
-              Load an example house
+              {module === 'plantroom' ? 'Load an example plant room' : 'Load an example house'}
             </button>
           </div>
           <p className="muted small">Projects are saved in this browser only. Use “Back up all” to keep a copy.</p>
@@ -80,15 +92,15 @@ export function ProjectsPage() {
       ) : (
         <div className="project-grid">
           {projects.map((p) => {
-            const hl = projectHeatLoss(p);
+            const kw = moduleOf(p) === 'plantroom' && p.plant ? analysePlant(p.plant, p.settings.fluid).connectedKw : projectHeatLoss(p).totalW / 1000;
             return (
               <article key={p.id} className="project-card" onClick={() => go(`p/${p.id}/overview`)}>
                 <h3>{p.name}</h3>
                 <p className="muted">{[p.customer.name, p.customer.postcode].filter(Boolean).join(' · ') || 'No customer yet'}</p>
                 <div className="kv">
                   <span>{p.systemType}</span>
-                  <span>{p.rooms.length} rooms</span>
-                  <span>{fmt(hl.totalW / 1000, 2)} kW</span>
+                  {moduleOf(p) === 'heating' && <span>{p.rooms.length} rooms</span>}
+                  <span>{fmt(kw, 2)} kW</span>
                 </div>
                 <div className="card-actions" onClick={(e) => e.stopPropagation()}>
                   {!IS_PREVIEW && (
