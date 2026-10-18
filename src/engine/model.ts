@@ -2,6 +2,8 @@ import type { FluidId } from './fluid';
 import type { Fabric } from '../data/fabrics';
 import type { PipeMaterial } from './pipes';
 import type { PlantRoom } from './plant';
+import type { PoolInputs } from './pool';
+import type { CylinderBadge, DhwDemandInput } from './dhw';
 import type { AgeBand } from '../data/climate';
 import type { GroundFloorKind } from './groundfloor';
 
@@ -234,12 +236,14 @@ export interface Customer {
   email: string;
 }
 
-export type ModuleId = 'heating' | 'plantroom';
+export type ModuleId = 'heating' | 'heatloss' | 'survey' | 'materials' | 'plantroom' | 'pool' | 'dhw';
 
 export interface Project {
   id: string;
   module?: ModuleId; // absent = 'heating' (projects made before modules existed)
   plant?: PlantRoom;
+  pool?: PoolInputs;
+  dhw?: DhwProject;
   name: string;
   reference: string;
   systemType: string;
@@ -271,4 +275,15 @@ export interface CompanyProfile {
   accreditations: string;
   logoDataUrl?: string;
   footer: string;
+}
+
+export interface DhwProject {
+  demand: DhwDemandInput;
+  badge: CylinderBadge;
+  primaryFlowC: number; // the system's real primary flow temperature
+  primaryFlowLpm: number;
+  sourceKw: number; // heat source output available for hot water
+  targetReheatMinutes: number;
+  spaceHeatingLoadKw: number;
+  photos: string[]; // data URLs of the cylinder badge, downscaled
 }

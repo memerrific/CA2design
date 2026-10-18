@@ -1,78 +1,121 @@
 import type { ModuleId, Project } from './engine/model';
 
 export interface ModuleInfo {
-  id: string;
+  id: ModuleId | string;
   name: string;
+  short: string;
   blurb: string;
   live: boolean;
+  group: 'project' | 'tool' | 'planned';
   covers: string[];
+  /** Live tools whose data a full property project already contains. */
+  partOfProperty?: boolean;
 }
 
-// The app's sections. Live ones open a project list; planned ones show what
-// they'll do so the roadmap is visible in one place.
+// The app's sections. The whole property project runs survey → handover; the
+// tools do one job each and can be upgraded into, or imported by, each other.
 export const MODULES: ModuleInfo[] = [
   {
     id: 'heating',
-    name: 'Heating design',
-    blurb: 'Survey to handover for a building: room-by-room heat loss, radiators, underfloor, pipework, pricing and the handover pack.',
+    name: 'Whole property project',
+    short: 'Property',
+    blurb: 'Survey to handover in one place: floor plans, room-by-room heat loss, radiators, underfloor, pipework, pricing and the handover pack.',
     live: true,
-    covers: ['Heat pumps', 'Oil & boiler replacements', 'Extensions & renovations', 'Commercial spaces'],
+    group: 'project',
+    covers: ['Heat pumps', 'Boiler replacements', 'Renovations', 'Commercial'],
+  },
+  {
+    id: 'heatloss',
+    name: 'Heat loss calculation',
+    short: 'Heat loss',
+    blurb: 'Room-by-room heat loss with MCS design data and a printable report.',
+    live: true,
+    group: 'tool',
+    covers: ['BS EN 12831', 'MCS defaults', 'Report'],
+    partOfProperty: true,
+  },
+  {
+    id: 'survey',
+    name: 'Site survey',
+    short: 'Survey',
+    blurb: 'Polycam plans, rooms, fabric, windows and the existing equipment on site.',
+    live: true,
+    group: 'tool',
+    covers: ['Polycam DXF', 'Fabric', 'Existing plant'],
+    partOfProperty: true,
+  },
+  {
+    id: 'materials',
+    name: 'Pipe runs & materials',
+    short: 'Materials',
+    blurb: 'Pipe sizing, flow rates and Kv, then a priced materials list and a merchant request.',
+    live: true,
+    group: 'tool',
+    covers: ['Pipe sizing', 'Kv', 'Merchant RFQ'],
+    partOfProperty: true,
   },
   {
     id: 'plantroom',
     name: 'Plant room & low loss header',
-    blurb: 'Start from the loads leaving the plant room: circuit flows, pipe sizes, pump duties, Kv, header size and the temperatures the header will actually deliver.',
+    short: 'Plant room',
+    blurb: 'Start from the loads leaving the plant room: flows, pumps, Kv, header size and the temperatures circuits really get.',
     live: true,
-    covers: ['Boiler cascades', 'Cylinders & calorifiers', 'Pool heat exchangers', 'AHU coils'],
-  },
-  {
-    id: 'aircon',
-    name: 'Air conditioning & F-gas',
-    blurb: 'Cooling loads, unit selection, refrigerant pipe runs and additional charge, CO₂e, leak-check frequency and F-gas records.',
-    live: false,
-    covers: ['Split & multi-split', 'VRF', 'Leak-check log'],
+    group: 'tool',
+    covers: ['Boiler cascades', 'Cylinders', 'Pools', 'AHU coils'],
   },
   {
     id: 'pool',
     name: 'Pool heating',
-    blurb: 'Heat-up and running loads, evaporation and cover savings, pool heat pump or plate heat exchanger sizing.',
-    live: false,
-    covers: ['Indoor & outdoor pools', 'Hot tubs', 'Pool heat pumps'],
+    short: 'Pool',
+    blurb: 'Heat-up and running losses, cover savings, and the heat pump or plate heat exchanger duty.',
+    live: true,
+    group: 'tool',
+    covers: ['Indoor & outdoor', 'Covers', 'Plate HEX'],
   },
   {
     id: 'dhw',
     name: 'Hot water & cylinders',
-    blurb: 'Peak demand, cylinder and coil sizing, reheat times, legionella control and unvented G3 records.',
-    live: false,
-    covers: ['Unvented cylinders', 'Thermal stores', 'Calorifiers'],
+    short: 'Hot water',
+    blurb: 'Size the cylinder from the household, read the data badge, and check reheat times on a heat pump.',
+    live: true,
+    group: 'tool',
+    covers: ['Cylinder sizing', 'Coil kW', 'Legionella'],
   },
   {
-    id: 'large',
-    name: 'Churches & large spaces',
-    blurb: 'Tall, intermittently heated buildings: height corrections, preheat time, stratification and zoning.',
+    id: 'aircon',
+    name: 'Air conditioning & F-gas',
+    short: 'Air con',
+    blurb: 'Cooling loads, unit selection, refrigerant pipe runs and charge, CO₂e, leak-check frequency and F-gas records.',
     live: false,
-    covers: ['Churches & halls', 'Warehouses', 'Workshops'],
+    group: 'planned',
+    covers: [],
   },
   {
     id: 'solar',
     name: 'Solar PV & battery',
+    short: 'Solar',
     blurb: 'Array layout, yield estimate, inverter and battery sizing, DNO paperwork.',
     live: false,
-    covers: ['Roof & ground mount', 'Battery storage'],
+    group: 'planned',
+    covers: [],
   },
   {
     id: 'oil',
     name: 'Oil installations',
-    blurb: 'Tank siting and separation checks, oil supply line sizing, and the commissioning and landlord paperwork.',
+    short: 'Oil',
+    blurb: 'Tank siting and separation checks, oil line sizing, commissioning paperwork.',
     live: false,
-    covers: ['Tank replacement', 'Boiler installs'],
+    group: 'planned',
+    covers: [],
   },
   {
     id: 'service',
     name: 'Service & commissioning records',
-    blurb: 'Service sheets, combustion results, commissioning checklists and annual reminders.',
+    short: 'Service',
+    blurb: 'Service sheets, combustion results, commissioning checklists and reminders.',
     live: false,
-    covers: ['Boilers', 'Heat pumps', 'Unvented'],
+    group: 'planned',
+    covers: [],
   },
 ];
 

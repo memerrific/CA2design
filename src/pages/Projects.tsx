@@ -5,8 +5,10 @@ import type { Project } from '../engine/model';
 import { downloadJson, readFile, store, useStore } from '../store';
 import { fmt } from '../ui/fields';
 import { ask, IS_PREVIEW } from '../ui/dialog';
-import { demoPlantRoom, demoProject } from '../data/demo';
+import { demoFor } from '../data/demo';
 import { analysePlant, defaultPlantRoom } from '../engine/plant';
+import { analysePool, defaultPoolInputs } from '../engine/pool';
+import { defaultDhw } from '../data/dhwDefaults';
 import type { ModuleId } from '../engine/model';
 import { moduleInfo, moduleOf } from '../modules';
 
@@ -18,6 +20,8 @@ export function ProjectsPage({ module }: { module: ModuleId }) {
   const create = () => {
     const p = newProject('New project');
     p.module = module;
+    if (module === 'pool') p.pool = defaultPoolInputs();
+    if (module === 'dhw') p.dhw = defaultDhw();
     if (module === 'plantroom') {
       p.plant = defaultPlantRoom();
       p.systemType = 'Multi-boiler plant room';
@@ -79,12 +83,12 @@ export function ProjectsPage({ module }: { module: ModuleId }) {
             <button
               className="btn ghost"
               onClick={() => {
-                const p = module === 'plantroom' ? demoPlantRoom() : demoProject();
+                const p = demoFor(module);
                 store.upsertProject(p);
                 go(`p/${p.id}/overview`);
               }}
             >
-              {module === 'plantroom' ? 'Load an example plant room' : 'Load an example house'}
+              Load an example
             </button>
           </div>
           <p className="muted small">Projects are saved in this browser only. Use “Back up all” to keep a copy.</p>
@@ -92,15 +96,23 @@ export function ProjectsPage({ module }: { module: ModuleId }) {
       ) : (
         <div className="project-grid">
           {projects.map((p) => {
-            const kw = moduleOf(p) === 'plantroom' && p.plant ? analysePlant(p.plant, p.settings.fluid).connectedKw : projectHeatLoss(p).totalW / 1000;
+            const m = moduleOf(p);
+            const kw =
+              m === 'plantroom' && p.plant
+                ? analysePlant(p.plant, p.settings.fluid).connectedKw
+                : m === 'pool'
+                  ? analysePool({ ...defaultPoolInputs(), ...p.pool }).dutyKw
+                  : m === 'dhw'
+                    ? NaN
+                    : projectHeatLoss(p).totalW / 1000;
             return (
               <article key={p.id} className="project-card" onClick={() => go(`p/${p.id}/overview`)}>
                 <h3>{p.name}</h3>
                 <p className="muted">{[p.customer.name, p.customer.postcode].filter(Boolean).join(' · ') || 'No customer yet'}</p>
                 <div className="kv">
                   <span>{p.systemType}</span>
-                  {moduleOf(p) === 'heating' && <span>{p.rooms.length} rooms</span>}
-                  <span>{fmt(kw, 2)} kW</span>
+                  {p.rooms.length > 0 && <span>{p.rooms.length} rooms</span>}
+                  {Number.isFinite(kw) && <span>{fmt(kw, 2)} kW</span>}
                 </div>
                 <div className="card-actions" onClick={(e) => e.stopPropagation()}>
                   {!IS_PREVIEW && (

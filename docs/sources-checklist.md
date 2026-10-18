@@ -48,13 +48,13 @@ Status: ✅ have it · 🔎 found, free, still to load into the app · 🛒 to b
 
 ## 5. App changes waiting on these sources
 
-- [ ] Replace external design temperatures with the 14 CIBSE Guide A stations used by MCS, plus the altitude correction (−0.6 °C per whole 100 m above the station).
-- [ ] Annual mean temperatures and degree days by postcode area (from MCS docs).
-- [ ] Room temperature defaults by age band (CIBSE DHDG 2026 Table 2-2, as listed in MCS docs).
-- [ ] Minimum air change rates 0.5 / 0.0 (internal rooms) and BS EN 12831-1 infiltration method.
-- [ ] Thermal bridging by age band (RdSAP Table 21 external; CIBSE Table 2-9 internal).
-- [ ] U-value library rebuilt from RdSAP 10 by age band.
-- [ ] Ground floor U-values from area and exposed perimeter (RdSAP §5.12 / BS EN ISO 13370).
-- [ ] Add 0.25 m to wall heights for storeys above the lowest (MCS net internal convention).
-- [ ] Radiator catalogue from Stelrad and column radiator data.
+- [x] Replace external design temperatures with the 14 CIBSE Guide A stations used by MCS, plus the altitude correction (−0.6 °C per whole 100 m above the station).
+- [x] Annual mean temperatures and degree days by postcode area (from MCS docs).
+- [x] Room temperature defaults by age band (CIBSE DHDG 2026 Table 2-2, as listed in MCS docs).
+- [x] Minimum air change rates 0.5 / 0.0 (internal rooms). - [ ] Full BS EN 12831-1 infiltration method (needs the standard; interim q50 ÷ 20 estimate in place).
+- [x] Thermal bridging by age band (RdSAP Table 21 external; CIBSE Table 2-9 internal).
+- [x] U-value library rebuilt from RdSAP 10 by age band.
+- [x] Ground floor U-values from area and exposed perimeter (RdSAP §5.12 / BS EN ISO 13370).
+- [x] Add 0.25 m to wall heights for storeys above the lowest (MCS net internal convention).
+- [x] Radiator catalogue from Stelrad Compact (from search results; check PDFs directly). - [ ] Column radiator data.
 - [ ] Rooms over 4 m: emitter type and height correction (needs BS EN 12831-1).

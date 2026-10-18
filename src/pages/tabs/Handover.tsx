@@ -96,6 +96,36 @@ export function HandoverTab() {
   );
 }
 
+/** A fixed-content report built from the same sheets as the handover pack. */
+export function ReportTab({ kinds, title }: { kinds: HandoverSection['kind'][]; title: string }) {
+  const { project: p } = useProject();
+  const titles: Record<string, string> = { cover: 'Cover', summary: 'Summary', plan: 'Floor plans', heatloss: 'Room-by-room heat loss', equipment: 'Equipment on site' };
+  return (
+    <div className="page handover-page">
+      <div className="page-head no-print">
+        <div>
+          <p className="eyebrow">{title}</p>
+          <h1>{p.name}</h1>
+        </div>
+        <div className="actions">
+          {IS_PREVIEW ? (
+            <span className="muted small">Print / save PDF is available in the installed app.</span>
+          ) : (
+            <button className="btn" onClick={() => window.print()}>
+              Print / save PDF
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="pack">
+        {kinds.map((k) => (
+          <PackSection key={k} s={{ id: k, kind: k, title: k === 'cover' ? title : titles[k] ?? k, enabled: true }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function PackSection({ s }: { s: HandoverSection }) {
   const { project: p, loss } = useProject();
   const { company } = useStore();
@@ -114,7 +144,7 @@ function PackSection({ s }: { s: HandoverSection }) {
         <section className="sheet cover">
           <img className="cover-logo" src={company.logoDataUrl || './logo.png'} alt={company.name} />
           <p className="eyebrow">{company.tagline}</p>
-          <h1>Heating System Handover Pack</h1>
+          <h1>{s.title === 'Cover' ? 'Heating System Handover Pack' : s.title}</h1>
           <h3>{p.systemType}</h3>
           <div className="cover-meta">
             <div>

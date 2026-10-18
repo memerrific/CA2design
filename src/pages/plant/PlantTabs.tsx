@@ -4,6 +4,11 @@ import type { Project } from '../../engine/model';
 import { MATERIAL_NAMES, PIPE_SIZES, type PipeMaterial } from '../../engine/pipes';
 import { analysePlant, CIRCUIT_TYPES, defaultPlantRoom, type CircuitType, type HeatSource, type PlantCircuit, type PlantRoom } from '../../engine/plant';
 import { useStore } from '../../store';
+import { moduleInfo, moduleOf } from '../../modules';
+import { analysePool, defaultPoolInputs } from '../../engine/pool';
+import { defaultDhw } from '../../data/dhwDefaults';
+import { analyseDhw } from '../tools/DhwTabs';
+import { projectHeatLoss } from '../../engine/heatloss';
 import { IS_PREVIEW } from '../../ui/dialog';
 import { Card, fmt, NumField, Pill, Select, Stat, TextField } from '../../ui/fields';
 import { useProject } from '../ProjectView';
@@ -123,6 +128,7 @@ export function PlantDesignTab() {
         title="Circuits leaving the plant room"
         actions={
           <div className="actions">
+            <ImportCircuit />
             {CIRCUIT_TYPES.slice(0, 5).map((t) => (
               <button key={t.id} className="btn ghost sm" onClick={() => addCircuit(t.id)}>
                 + {t.name}
@@ -223,6 +229,42 @@ export function PlantDesignTab() {
         </div>
       </Card>
     </div>
+  );
+}
+
+/** Bring a load in from another project in the app as a new circuit. */
+function ImportCircuit() {
+  const { p, setPlant } = usePlant();
+  const { projects } = useStore();
+  const sources = projects.filter((x) => x.id !== p.id && ['heating', 'heatloss', 'pool', 'dhw'].includes(moduleOf(x)));
+  if (!sources.length) return null;
+  const add = (id: string) => {
+    const src = projects.find((x) => x.id === id);
+    if (!src) return;
+    const m = moduleOf(src);
+    let c: Pick<PlantCircuit, 'name' | 'type' | 'loadKw' | 'flowTemp' | 'deltaT'>;
+    if (m === 'pool') {
+      const pi = { ...defaultPoolInputs(), ...src.pool };
+      c = { name: `Pool: ${src.name}`, type: 'pool', loadKw: analysePool(pi).dutyKw, flowTemp: pi.primaryFlowTemp, deltaT: pi.primaryDeltaT };
+    } else if (m === 'dhw') {
+      const dh = { ...defaultDhw(), ...src.dhw };
+      c = { name: `Hot water: ${src.name}`, type: 'dhw', loadKw: analyseDhw(dh).priority.minSourceKw, flowTemp: 80, deltaT: 20 };
+    } else {
+      c = { name: `Heating: ${src.name}`, type: 'heating', loadKw: projectHeatLoss(src).totalW / 1000, flowTemp: src.settings.flowTemp, deltaT: src.settings.deltaT };
+    }
+    setPlant((x) =>
+      void x.circuits.push({ id: uid(), ...c, loadKw: Math.round(c.loadKw * 10) / 10, diversityPct: 100, material: 'copper', sizeId: '', lengthM: 10, fittingsPct: 40, terminalDropKpa: 10, valveKv: 0, notes: `Imported from ${src.name}` }),
+    );
+  };
+  return (
+    <select className="import-select" value="" onChange={(e) => add(e.target.value)} aria-label="Import a circuit from another project">
+      <option value="">Import from a project…</option>
+      {sources.map((x) => (
+        <option key={x.id} value={x.id}>
+          {moduleInfo(moduleOf(x))?.short}: {x.name}
+        </option>
+      ))}
+    </select>
   );
 }
 

@@ -2,6 +2,9 @@ import { detectAdjacency, newProject, roomFromPolygon, uid } from '../engine/fac
 import type { Pt } from '../engine/model';
 import { defaultRoomTemp, roomType } from './rooms';
 import { defaultPlantRoom } from '../engine/plant';
+import { defaultPoolInputs } from '../engine/pool';
+import { defaultDhw } from './dhwDefaults';
+import type { ModuleId, Project } from '../engine/model';
 
 /** A small example semi so the app can be explored without a survey. */
 export function demoProject() {
@@ -122,5 +125,29 @@ export function demoPlantRoom() {
   plant.circuits = [1, 2, 3, 4, 5].map(cyl);
   plant.circuits.push({ ...cyl(6), name: 'Pool plate heat exchanger', type: 'pool', loadKw: 20, lengthM: 30, terminalDropKpa: 20, valveKv: 2.5 });
   p.plant = plant;
+  return p;
+}
+
+/** Example project for each section. Sections built on the property data reuse the example house. */
+export function demoFor(module: ModuleId): Project {
+  if (module === 'plantroom') return demoPlantRoom();
+  if (module === 'pool') {
+    const p = newProject('Example: indoor pool 8 × 4 m');
+    p.module = 'pool';
+    p.pool = { ...defaultPoolInputs(), type: 'indoor', length: 8, width: 4, avgDepth: 1.4, waterTemp: 29, airTemp: 30, rh: 60 };
+    return p;
+  }
+  if (module === 'dhw') {
+    const p = newProject('Example: family of four, heat pump cylinder');
+    p.module = 'dhw';
+    p.dhw = {
+      ...defaultDhw(),
+      demand: { ...defaultDhw().demand, bedrooms: 4, bathrooms: 2, showers: [{ type: 'mixer' }, { type: 'mixer' }] },
+      badge: { manufacturer: 'Example', model: 'HP 210', capacityL: 210, coilAreaM2: 3, coilRatingKw: 19, coilRatedPrimaryFlowC: 80, coilRatedPrimaryFlowLpm: 15, heatLossKwhPer24h: 1.4, immersionKw: 3 },
+    };
+    return p;
+  }
+  const p = demoProject();
+  p.module = module;
   return p;
 }
