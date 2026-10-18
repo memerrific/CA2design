@@ -14,42 +14,40 @@ export function correctionFactor(dT: number, n = 1.3): number {
   return (dT / 50) ** n;
 }
 
-// Generic steel panel radiator outputs at ΔT50, W per metre of length at 600 mm
-// high, with height multipliers. Typical of UK compact panels; use the chosen
-// manufacturer's tables for the final selection.
-export const RAD_TYPES: { id: RadiatorType; name: string; wPerM600: number }[] = [
-  { id: '11', name: 'Type 11 (K1)', wPerM600: 1000 },
-  { id: '21', name: 'Type 21 (P+)', wPerM600: 1400 },
-  { id: '22', name: 'Type 22 (K2)', wPerM600: 1850 },
-  { id: '33', name: 'Type 33 (K3)', wPerM600: 2600 },
+// Steel panel radiator outputs at ΔT50 (75/65/20 °C), W per metre of length,
+// from Stelrad Compact published specification sheets. Heights between the
+// listed ones are interpolated; 900 mm is extrapolated. Check the chosen
+// manufacturer's current EN 442 data before ordering.
+export const RAD_TYPES: { id: RadiatorType; name: string; wPerM: Record<number, number> }[] = [
+  { id: '11', name: 'Type 11 (K1)', wPerM: { 300: 509, 450: 756, 600: 980 } },
+  { id: '21', name: 'Type 21 (P+)', wPerM: { 300: 745, 450: 1055, 600: 1345 } },
+  { id: '22', name: 'Type 22 (K2)', wPerM: { 300: 982, 450: 1371, 600: 1732, 700: 1961 } },
+  { id: '33', name: 'Type 33 (K3)', wPerM: { 300: 1349, 500: 2056, 600: 2389, 700: 2712 } },
 ];
 
-export const RAD_HEIGHTS: { mm: number; factor: number }[] = [
-  { mm: 300, factor: 0.56 },
-  { mm: 400, factor: 0.71 },
-  { mm: 450, factor: 0.78 },
-  { mm: 500, factor: 0.85 },
-  { mm: 600, factor: 1.0 },
-  { mm: 700, factor: 1.13 },
-  { mm: 900, factor: 1.4 },
-];
+export const RAD_HEIGHTS: { mm: number }[] = [{ mm: 300 }, { mm: 400 }, { mm: 450 }, { mm: 500 }, { mm: 600 }, { mm: 700 }, { mm: 900 }];
 
 export const RAD_LENGTHS = [400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1400, 1600, 1800, 2000];
 
-export function radiatorDt50(type: RadiatorType, heightMm: number, lengthMm: number): number {
+/** W per metre at ΔT50 for a type and height, interpolating the published heights. */
+export function radiatorWPerM(type: RadiatorType, heightMm: number): number {
   const t = RAD_TYPES.find((r) => r.id === type);
   if (!t) return 0;
-  const hs = [...RAD_HEIGHTS].sort((a, b) => a.mm - b.mm);
-  let factor: number;
-  if (heightMm <= hs[0].mm) factor = (hs[0].factor * heightMm) / hs[0].mm;
-  else if (heightMm >= hs[hs.length - 1].mm) factor = (hs[hs.length - 1].factor * heightMm) / hs[hs.length - 1].mm;
-  else {
-    const i = hs.findIndex((h) => h.mm >= heightMm);
-    const a = hs[i - 1];
-    const b = hs[i];
-    factor = a.factor + ((heightMm - a.mm) / (b.mm - a.mm)) * (b.factor - a.factor);
-  }
-  return (t.wPerM600 * factor * lengthMm) / 1000;
+  const pts = Object.entries(t.wPerM)
+    .map(([h, w]) => [Number(h), w] as [number, number])
+    .sort((a, b) => a[0] - b[0]);
+  const seg = (i: number) => {
+    const [h0, w0] = pts[i];
+    const [h1, w1] = pts[i + 1];
+    return w0 + ((heightMm - h0) * (w1 - w0)) / (h1 - h0);
+  };
+  if (heightMm <= pts[0][0]) return (pts[0][1] * heightMm) / pts[0][0];
+  for (let i = 0; i < pts.length - 1; i++) if (heightMm <= pts[i + 1][0]) return seg(i);
+  return seg(pts.length - 2);
+}
+
+export function radiatorDt50(type: RadiatorType, heightMm: number, lengthMm: number): number {
+  return (radiatorWPerM(type, heightMm) * lengthMm) / 1000;
 }
 
 export function emitterDt50(e: Emitter): number {

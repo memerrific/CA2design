@@ -1,6 +1,6 @@
 import { detectAdjacency, newProject, roomFromPolygon, uid } from '../engine/factory';
 import type { Pt } from '../engine/model';
-import { roomType } from './rooms';
+import { defaultRoomTemp, roomType } from './rooms';
 import { defaultPlantRoom } from '../engine/plant';
 
 /** A small example semi so the app can be explored without a survey. */
@@ -8,6 +8,7 @@ export function demoProject() {
   const p = newProject('Example: 1930s semi, Worthing');
   p.customer = { name: 'Example customer', address: '1 Example Road, Worthing', postcode: 'BN11', phone: '', email: '' };
   p.reference = 'DEMO-001';
+  p.settings.groundFloor = { kind: 'suspended', insulationMm: 0, wallThicknessMm: 250 };
   p.engineer = 'Callum';
   const ground: [string, string, Pt[]][] = [
     ['Lounge', 'living', [[0, 0], [4.2, 0], [4.2, 4.0], [0, 4.0]]],
@@ -25,11 +26,11 @@ export function demoProject() {
     defs.map(([name, type, poly]) => {
       const r = roomFromPolygon(name, poly, level, type);
       const t = roomType(type);
-      r.designTemp = t.temp;
+      r.designTemp = defaultRoomTemp(type, 'C');
       r.ach = t.ach;
       r.walls = r.walls.map((w) => ({ ...w, fabricId: 'w-cavity-filled' }));
       if (level === 'Ground') {
-        r.floor = { fabricId: 'f-suspended-timber', boundary: 'ground' };
+        r.floor = { fabricId: 'f-ground-calc', boundary: 'ground' };
         r.ceiling = { fabricId: 'r-intermediate', boundary: 'room' };
         r.height = 2.6;
       } else {

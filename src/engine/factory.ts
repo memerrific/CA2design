@@ -1,4 +1,5 @@
-import { roomType } from '../data/rooms';
+import { defaultRoomTemp, roomType } from '../data/rooms';
+import type { AgeBand } from '../data/climate';
 import { distToSegment } from './dxf';
 import { polygonArea, segLength } from './heatloss';
 import type { CompanyProfile, HandoverSection, Project, Pt, Room, Wall } from './model';
@@ -64,12 +65,21 @@ export function newProject(name = 'New project'): Project {
     customer: { name: '', address: '', postcode: '', phone: '', email: '' },
     engineer: '',
     settings: {
-      externalTemp: -1.6,
-      locationName: 'Worthing / Shoreham (approx.)',
-      meanExternalTemp: 10.5,
+      externalTemp: -3.0,
+      locationName: 'London (Heathrow)',
+      stationId: 'london',
+      altitude: 0,
+      percentile: '99.6',
+      meanExternalTemp: 10.2,
       neighbourTemp: 10,
       unheatedTemp: 7,
-      thermalBridgeU: 0,
+      ageBand: 'C',
+      thermalBridgeU: 0.15,
+      thermalBridgeInternalU: 0.1,
+      airPermeability: 12,
+      infiltrationFactor: 0.05,
+      floorVoidAddM: 0.25,
+      groundFloor: { kind: 'solid', insulationMm: 0, wallThicknessMm: 250 },
       marginPct: 0,
       flowTemp: 45,
       deltaT: 5,
@@ -100,19 +110,19 @@ export function newWall(n: number, length = 3, external = true): Wall {
   };
 }
 
-export function newRoom(name: string, typeId = 'living', level = 'Ground'): Room {
+export function newRoom(name: string, typeId = 'living', level = 'Ground', band: AgeBand = 'C'): Room {
   const t = roomType(typeId);
   return {
     id: uid(),
     name,
     typeId,
     level,
-    designTemp: t.temp,
+    designTemp: defaultRoomTemp(typeId, band),
     ach: t.ach,
     area: 12,
     height: 2.4,
     walls: [newWall(1, 4), newWall(2, 3)],
-    floor: { fabricId: level === 'Ground' ? 'f-solid-uninsulated' : 'f-intermediate', boundary: level === 'Ground' ? 'ground' : 'room' },
+    floor: { fabricId: level === 'Ground' ? 'f-ground-calc' : 'f-intermediate', boundary: level === 'Ground' ? 'ground' : 'room' },
     ceiling: { fabricId: 'r-loft-270', boundary: 'external' },
     emitters: [],
     ufh: {
@@ -131,8 +141,8 @@ export function newRoom(name: string, typeId = 'living', level = 'Ground'): Room
 }
 
 /** Make a room from a traced or imported polygon, one wall per edge. */
-export function roomFromPolygon(name: string, poly: Pt[], level: string, typeId = 'living'): Room {
-  const r = newRoom(name, typeId, level);
+export function roomFromPolygon(name: string, poly: Pt[], level: string, typeId = 'living', band: AgeBand = 'C'): Room {
+  const r = newRoom(name, typeId, level, band);
   r.polygon = poly;
   r.area = round(polygonArea(poly), 2);
   r.walls = poly.map((p, i) => ({ ...newWall(i + 1, round(segLength(p, poly[(i + 1) % poly.length]), 2)) }));

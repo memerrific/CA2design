@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { FABRICS, KIND_NAMES, type FabricKind } from '../../data/fabrics';
-import { ROOM_TYPES, roomType } from '../../data/rooms';
+import { defaultRoomTemp, ROOM_TYPES, roomType } from '../../data/rooms';
 import { newRoom, newWall, uid } from '../../engine/factory';
-import { openingArea, wallGrossArea } from '../../engine/heatloss';
+import { openingArea, settingsOf, wallGrossArea } from '../../engine/heatloss';
 import type { Boundary, Project, Room, Surface } from '../../engine/model';
 import { Card, fmt, NumField, Select, TextField } from '../../ui/fields';
 import { ask } from '../../ui/dialog';
@@ -31,7 +31,7 @@ export function RoomsTab() {
   const idx = sel ? p.rooms.findIndex((r) => r.id === sel.id) : -1;
 
   const addRoom = () => {
-    const r = newRoom(`Room ${p.rooms.length + 1}`, 'living', sel?.level ?? 'Ground');
+    const r = newRoom(`Room ${p.rooms.length + 1}`, 'living', sel?.level ?? 'Ground', settingsOf(p).ageBand);
     update((d) => void d.rooms.push(r));
     setSelId(r.id);
   };
@@ -127,7 +127,7 @@ function RoomEditor({ room: r, idx, onDeleted }: { room: Room; idx: number; onDe
               set((x) => {
                 x.typeId = v;
                 const t = roomType(v);
-                x.designTemp = t.temp;
+                x.designTemp = defaultRoomTemp(v, settingsOf(p).ageBand);
                 x.ach = t.ach;
               })
             }
@@ -281,7 +281,9 @@ function RoomEditor({ room: r, idx, onDeleted }: { room: Room; idx: number; onDe
                 </tr>
               ))}
               <tr>
-                <td>Ventilation ({r.ach} ach × {fmt(rl.volume, 1)} m³)</td>
+                <td>
+                  Ventilation {fmt(rl.airflowM3h)} m³/h ({rl.airflowSource === 'infiltration' ? 'infiltration share' : `${r.ach}/h minimum × ${fmt(rl.volume, 1)} m³`})
+                </td>
                 <td />
                 <td />
                 <td className="r">{fmt(r.designTemp - p.settings.externalTemp, 1)}</td>

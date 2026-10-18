@@ -1,4 +1,5 @@
 import { Card, fmt, Pill, Stat } from '../../ui/fields';
+import { settingsOf } from '../../engine/heatloss';
 import { useProject } from '../ProjectView';
 
 export function HeatLossTab() {
@@ -30,8 +31,8 @@ export function HeatLossTab() {
         </p>
       )}
       <p className="notice info">
-        Ventilation uses air changes per room (the older CIBSE method). The current MCS calculator uses the BS EN 12831-1 ventilation method, which can give
-        noticeably less ventilation loss in older houses. See <a href="#/methods">Methods & sources</a>.
+        Ventilation: each room takes the larger of 0.5 air changes/h and its share of building infiltration (air permeability {settingsOf(p).airPermeability}{' '}
+        m³/h·m²). The full BS EN 12831-1 infiltration method is not in yet, so the infiltration share is an estimate. See <a href="#/methods">Methods & sources</a>.
       </p>
 
       <Card title="Heat source sizing">

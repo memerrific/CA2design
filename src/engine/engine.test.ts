@@ -1,7 +1,7 @@
 import { correctionFactor, meanDeltaT, radiatorDt50, suggestRadiator } from './emitters';
 import { parseDxf, normalisePlan } from './dxf';
 import { detectAdjacency, newProject, newRoom, roomFromPolygon } from './factory';
-import { roomHeatLoss } from './heatloss';
+import { projectHeatLoss, roomHeatLoss } from './heatloss';
 import { analysePipe, autoSize, flowFromHeat, requiredKv, valveDropBar } from './pipes';
 import { designUfhRoom, floorSurfaceTemp, logMeanDt, ufhHeatFlux } from './ufh';
 
@@ -9,6 +9,9 @@ describe('heat loss', () => {
   it('matches a hand calculation for a simple room', () => {
     const p = newProject();
     p.settings.externalTemp = -2;
+    p.settings.thermalBridgeU = 0;
+    p.settings.thermalBridgeInternalU = 0;
+    p.settings.airPermeability = 0;
     const r = newRoom('Lounge', 'living');
     r.area = 20;
     r.height = 2.5;
@@ -21,13 +24,64 @@ describe('heat loss', () => {
     p.rooms = [r];
     const l = roomHeatLoss(p, r);
     const dT = 21 - -2;
-    const wall = 1.6 * (12.5 - 2.5) * dT;
+    const wall = 1.5 * (12.5 - 2.5) * dT;
     const win = 2.8 * 2.5 * dT;
     const floor = 0.7 * 20 * 1.45 * (21 - p.settings.meanExternalTemp);
     const vent = 0.33 * 1 * 50 * dT;
     expect(l.fabricW).toBeCloseTo(wall + win + floor, 6);
     expect(l.ventilationW).toBeCloseTo(vent, 6);
     expect(l.totalW).toBeCloseTo(wall + win + floor + vent, 6);
+  });
+
+  it('adds thermal bridging, the floor void and infiltration like MCS', () => {
+    const p = newProject();
+    p.settings.externalTemp = -3;
+    const down = newRoom('Lounge', 'living', 'Ground');
+    const up = newRoom('Bed', 'bedroom', 'First');
+    for (const r of [down, up]) {
+      r.area = 16;
+      r.height = 2.4;
+      r.walls = [{ id: 'w' + r.id, name: 'Front', length: 4, fabricId: 'w-cavity-unfilled', boundary: 'external', openings: [] }];
+      r.ceiling = { fabricId: 'r-intermediate', boundary: 'room' };
+      r.floor = { fabricId: 'f-intermediate', boundary: 'room' };
+    }
+    p.rooms = [down, up];
+    p.settings.airPermeability = 0;
+    const L = projectHeatLoss(p);
+    const wallDown = L.byId.get(down.id)!.elements[0];
+    const wallUp = L.byId.get(up.id)!.elements[0];
+    // Thermal bridging 0.15 (age band C) on external elements.
+    expect(wallDown.u).toBeCloseTo(1.5 + 0.15, 6);
+    // Floor void 0.25 m on the lower storey only.
+    expect(wallDown.area).toBeCloseTo(4 * 2.65, 6);
+    expect(wallUp.area).toBeCloseTo(4 * 2.4, 6);
+    // Minimum 0.5 ACH.
+    expect(L.byId.get(down.id)!.airflowM3h).toBeCloseTo(0.5 * 16 * 2.4, 6);
+    // Infiltration share takes over when it is larger.
+    p.settings.airPermeability = 12;
+    p.settings.infiltrationFactor = 0.2;
+    const L2 = projectHeatLoss(p);
+    const share = (12 * L2.envelopeArea * 0.2 * L2.byId.get(down.id)!.envelopeArea) / L2.envelopeArea;
+    expect(L2.byId.get(down.id)!.airflowM3h).toBeCloseTo(share, 6);
+    expect(L2.byId.get(down.id)!.airflowSource).toBe('infiltration');
+  });
+
+  it('uses the calculated ground floor U-value', () => {
+    const p = newProject();
+    const r = newRoom('Kitchen', 'kitchen', 'Ground');
+    r.area = 50;
+    r.walls = [
+      { id: 'a', name: 'A', length: 10, fabricId: 'w-cavity-unfilled', boundary: 'external', openings: [] },
+      { id: 'b', name: 'B', length: 10, fabricId: 'w-cavity-unfilled', boundary: 'external', openings: [] },
+    ];
+    p.rooms = [r];
+    const L = projectHeatLoss(p);
+    expect(L.ground.area).toBe(50);
+    expect(L.ground.perimeter).toBe(20);
+    const floor = L.byId.get(r.id)!.elements.find((e) => e.kind === 'floor')!;
+    expect(floor.u).toBeCloseTo(L.ground.u + 0.15, 6);
+    expect(L.ground.u).toBeGreaterThan(0.5);
+    expect(L.ground.u).toBeLessThan(0.75);
   });
 
   it('treats walls to warmer rooms as gains', () => {
@@ -53,7 +107,11 @@ describe('radiators', () => {
   it('sizes a radiator that meets the load', () => {
     const s = suggestRadiator(1000, 21.5, 600)!;
     expect(s.output).toBeGreaterThanOrEqual(1000);
-    expect(radiatorDt50('22', 600, 1000)).toBeCloseTo(1850);
+    expect(radiatorDt50('22', 600, 1000)).toBeCloseTo(1732);
+    expect(radiatorDt50('22', 450, 1000)).toBeCloseTo(1371);
+    expect(radiatorDt50('33', 600, 600)).toBeCloseTo(2389 * 0.6);
+    // 500 mm K2 sits between the 450 and 600 figures.
+    expect(radiatorDt50('22', 500, 1000)).toBeCloseTo(1371 + (50 * (1732 - 1371)) / 150);
   });
 });
 
@@ -172,5 +230,29 @@ describe('plant room', () => {
     const r2 = analysePlant(plant, 'water');
     expect(r2.secondaryFlowTempAtHeader).toBeCloseTo((60 * 80 + 10 * 60) / 70, 0);
     expect(r2.warnings.some((w) => w.includes('below the diversified load'))).toBe(true);
+  });
+});
+
+describe('design climate', () => {
+  it('applies the MCS altitude rule and finds the nearest station', async () => {
+    const { designTemperature, nearestStation, station } = await import('../data/climate');
+    const heathrow = station('london')!;
+    expect(designTemperature(heathrow, 0)).toBe(-3.0);
+    expect(designTemperature(heathrow, 124)).toBe(-3.0); // only 99 m above the station
+    expect(designTemperature(heathrow, 125)).toBe(-3.6);
+    expect(designTemperature(heathrow, 230)).toBe(-4.2);
+    expect(designTemperature(heathrow, 0, '99')).toBe(-1.7);
+    // Worthing
+    expect(nearestStation(50.82, -0.37).id).toBe('london');
+    // Plymouth
+    expect(nearestStation(50.37, -4.14).id).toBe('plymouth');
+  });
+  it('matches RdSAP 10 ground floor examples in shape', async () => {
+    const { groundFloorU } = await import('./groundfloor');
+    const solid = groundFloorU({ kind: 'solid', areaM2: 100, exposedPerimeterM: 30, wallThicknessMm: 250, insulationMm: 0 });
+    const insulated = groundFloorU({ kind: 'solid', areaM2: 100, exposedPerimeterM: 30, wallThicknessMm: 250, insulationMm: 100 });
+    expect(insulated).toBeLessThan(solid);
+    // Bigger floor, same perimeter → lower U.
+    expect(groundFloorU({ kind: 'solid', areaM2: 200, exposedPerimeterM: 30, wallThicknessMm: 250, insulationMm: 0 })).toBeLessThan(solid);
   });
 });

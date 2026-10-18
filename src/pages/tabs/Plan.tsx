@@ -2,7 +2,7 @@ import { useMemo, useRef, useState, type MouseEvent, type WheelEvent } from 'rea
 import { go } from '../../App';
 import { normalisePlan, parseDxf, pointInPolygon } from '../../engine/dxf';
 import { detectAdjacency, roomFromPolygon } from '../../engine/factory';
-import { polygonArea } from '../../engine/heatloss';
+import { polygonArea, settingsOf } from '../../engine/heatloss';
 import type { PlanUnderlay, Pt } from '../../engine/model';
 import { readFile } from '../../store';
 import { Card, fmt, Pill } from '../../ui/fields';
@@ -87,7 +87,7 @@ export function PlanTab() {
     const name = await ask.prompt('Room name', label ?? `Room ${p.rooms.length + 1}`);
     if (!name) return;
     update((d) => {
-      d.rooms.push(roomFromPolygon(name, poly, level, guessType(name)));
+      d.rooms.push(roomFromPolygon(name, poly, level, guessType(name), settingsOf(d).ageBand));
       const same = detectAdjacency(d.rooms.filter((r) => r.level === level));
       d.rooms = d.rooms.map((r) => same.find((s) => s.id === r.id) ?? r);
     });
@@ -140,7 +140,7 @@ export function PlanTab() {
       update((d) => {
         auto.forEach((poly, i) => {
           const label = parsed.labels.find((l) => pointInPolygon(l.at, poly))?.text;
-          d.rooms.push(roomFromPolygon(label ?? `Room ${i + 1}`, poly, level, guessType(label ?? '')));
+          d.rooms.push(roomFromPolygon(label ?? `Room ${i + 1}`, poly, level, guessType(label ?? ''), settingsOf(d).ageBand));
         });
         const same = detectAdjacency(d.rooms.filter((r) => r.level === level));
         d.rooms = d.rooms.map((r) => same.find((s) => s.id === r.id) ?? r);

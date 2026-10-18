@@ -1,5 +1,5 @@
 import { FABRICS, KIND_NAMES, type FabricKind } from '../../data/fabrics';
-import { DESIGN_LOCATIONS } from '../../data/rooms';
+import { DesignConditionsCard } from './DesignConditions';
 import { uid } from '../../engine/factory';
 import { FLUIDS, type FluidId } from '../../engine/fluid';
 import { Card, NumField, Select, TextField } from '../../ui/fields';
@@ -55,31 +55,7 @@ export function OverviewTab() {
         </Card>
       </div>
 
-      <Card title="Design conditions">
-        <div className="grid4">
-          <Select
-            label="Location"
-            value={s.locationName}
-            onChange={(v) =>
-              update((d) => {
-                d.settings.locationName = v;
-                const loc = DESIGN_LOCATIONS.find((l) => l.name === v);
-                if (loc && v !== 'Custom') d.settings.externalTemp = loc.temp;
-              })
-            }
-            options={DESIGN_LOCATIONS.map((l) => ({ value: l.name, label: l.name }))}
-          />
-          <NumField label="External design temp" unit="°C" value={s.externalTemp} onChange={(v) => update((d) => void (d.settings.externalTemp = v))} />
-          <NumField label="Annual mean external (ground)" unit="°C" value={s.meanExternalTemp} onChange={(v) => update((d) => void (d.settings.meanExternalTemp = v))} />
-          <NumField label="Heated neighbour" unit="°C" value={s.neighbourTemp} onChange={(v) => update((d) => void (d.settings.neighbourTemp = v))} />
-          <NumField label="Unheated spaces" unit="°C" value={s.unheatedTemp} onChange={(v) => update((d) => void (d.settings.unheatedTemp = v))} />
-          <NumField label="Thermal bridging ΔU" unit="W/m²K" step={0.01} value={s.thermalBridgeU} onChange={(v) => update((d) => void (d.settings.thermalBridgeU = v))} />
-          <NumField label="Design margin" unit="%" value={s.marginPct} onChange={(v) => update((d) => void (d.settings.marginPct = v))} />
-        </div>
-        <p className="muted small">
-          Location temperatures are approximate starting points. Confirm the external design temperature for the postcode before relying on the result.
-        </p>
-      </Card>
+      <DesignConditionsCard />
 
       <Card title="Heating system">
         <div className="grid4">

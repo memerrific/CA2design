@@ -2,6 +2,8 @@ import type { FluidId } from './fluid';
 import type { Fabric } from '../data/fabrics';
 import type { PipeMaterial } from './pipes';
 import type { PlantRoom } from './plant';
+import type { AgeBand } from '../data/climate';
+import type { GroundFloorKind } from './groundfloor';
 
 export type Pt = [number, number];
 
@@ -203,6 +205,25 @@ export interface ProjectSettings {
   deltaT: number; // system flow–return difference
   fluid: FluidId;
   radiatorExponent: number;
+  // Added with the MCS / RdSAP data. Optional so older saved projects still load;
+  // read them through settingsOf() in heatloss.ts.
+  ageBand?: AgeBand;
+  stationId?: string;
+  altitude?: number; // m above sea level
+  percentile?: '99.6' | '99';
+  thermalBridgeInternalU?: number; // ΔU added to internal & party elements
+  airPermeability?: number; // q50, m³/(h·m²) at 50 Pa; 0 = ignore infiltration
+  infiltrationFactor?: number; // q50 → natural infiltration ratio
+  floorVoidAddM?: number; // added to external wall heights below the top storey
+  groundFloor?: GroundFloorSettings;
+}
+
+export interface GroundFloorSettings {
+  kind: GroundFloorKind;
+  insulationMm: number;
+  wallThicknessMm: number;
+  areaOverride?: number; // m², default: sum of ground-floor room areas
+  perimeterOverride?: number; // m, default: sum of external ground-floor wall lengths
 }
 
 export interface Customer {
