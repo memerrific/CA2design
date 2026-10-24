@@ -42,7 +42,7 @@ export default function App() {
   } else if (parts[0] === 'new') {
     page = <NewJobPage />;
   } else if (parts[0] === 'settings') {
-    page = <SettingsPage />;
+    page = <SettingsPage section={parts[1]} />;
   } else if (parts[0] === 'prices') {
     page = <PricesPage />;
   } else if (parts[0] === 'methods') {

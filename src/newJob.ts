@@ -4,6 +4,7 @@ import type { Project } from './engine/model';
 import { defaultPlantRoom } from './engine/plant';
 import { defaultPoolInputs } from './engine/pool';
 import { jobInfo } from './jobs';
+import { applyJobDefaults } from './prefs';
 
 /** Switch a project (or draft) to another job type, filling in whatever that type needs. Nothing is removed. */
 export function applyJobType(p: Project, jobId: string) {
@@ -23,6 +24,7 @@ export function applyJobType(p: Project, jobId: string) {
 
 export function newProjectFor(jobId: string): Project {
   const p = newProject('New job');
+  applyJobDefaults(p);
   applyJobType(p, jobId);
   return p;
 }

@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Icon } from './icons';
+import { usePrefs } from '../prefs';
 
 const KEY = 'ca2d.explain.hidden';
 
@@ -13,6 +14,7 @@ function readHidden(): string[] {
 
 /** "What this page does" box. Hiding it is remembered per page; a small link brings it back. */
 export function Explain({ id, children, title = 'What this page does' }: { id: string; children: ReactNode; title?: string }) {
+  const { explanations } = usePrefs();
   const [hidden, setHidden] = useState(() => readHidden().includes(id));
   const set = (h: boolean) => {
     setHidden(h);
@@ -24,6 +26,7 @@ export function Explain({ id, children, title = 'What this page does' }: { id: s
     }
   };
 
+  if (!explanations) return null;
   if (hidden)
     return (
       <button className="explain-open no-print" onClick={() => set(false)}>
@@ -42,4 +45,17 @@ export function Explain({ id, children, title = 'What this page does' }: { id: s
       </button>
     </aside>
   );
+}
+
+/** Bring back every explanation that was hidden with "Got it". */
+export function showAllExplanations() {
+  try {
+    localStorage.removeItem(KEY);
+  } catch {
+    /* nothing to clear */
+  }
+}
+
+export function hiddenExplanationCount(): number {
+  return readHidden().length;
 }

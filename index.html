@@ -14,6 +14,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <meta name="theme-color" content="#f6f6f7" />
     <title>CA2 Designer</title>
+    <script>
+      // Set the theme before the page draws, so dark mode never flashes white.
+      try {
+        var t = (JSON.parse(localStorage.getItem('ca2d.prefs.v1') || '{}').theme) || 'system';
+        if (t === 'system') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

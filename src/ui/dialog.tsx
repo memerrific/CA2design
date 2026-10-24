@@ -48,6 +48,17 @@ export function Dialogs() {
     setTimeout(() => (req.kind === 'prompt' ? inputRef.current?.select() : okRef.current?.focus()), 0);
   }, [req]);
 
+  // Leaving the page answers "no" rather than leaving the question open over the next one.
+  useEffect(() => {
+    if (!req) return;
+    const cancel = () => {
+      set(null);
+      req.resolve(req.kind === 'confirm' ? false : null);
+    };
+    window.addEventListener('hashchange', cancel);
+    return () => window.removeEventListener('hashchange', cancel);
+  }, [req]);
+
   if (!req) return null;
   const close = (v: string | boolean | null) => {
     set(null);

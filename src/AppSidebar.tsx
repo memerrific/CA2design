@@ -83,7 +83,7 @@ export function AppSidebar({ route }: { route: string[] }) {
           <h6>More</h6>
           <Item href="#/prices" icon="coins" label="Price list" on={at('prices')} />
           <Item href="#/methods" icon="book" label="Methods & sources" on={at('methods')} />
-          <Item href="#/settings" icon="gear" label="Settings & branding" on={at('settings')} />
+          <Item href="#/settings" icon="gear" label="Settings & branding" on={route[0] === 'settings'} />
         </div>
       </nav>
 
