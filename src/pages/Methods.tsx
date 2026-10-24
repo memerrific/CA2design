@@ -1,3 +1,4 @@
+import { Explain } from '../ui/explain';
 import { Card, Pill } from '../ui/fields';
 
 type Status = 'exact' | 'method' | 'approx' | 'gap';
@@ -193,6 +194,10 @@ export function MethodsPage() {
           <h1>Where every number comes from</h1>
         </div>
       </div>
+      <Explain id="methods">
+        Every calculation in the app, the standard or data table it follows, and how far it has been checked. Green means an exact formula; amber means
+        an approximation to check before relying on it.
+      </Explain>
       <Card>
         <p>
           This app is a design aid. A competent person must check the inputs and results before a design is issued. Each method below says where it comes

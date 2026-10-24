@@ -15,7 +15,10 @@ import { HandoverTab } from './tabs/Handover';
 import { MerchantTab } from './tabs/Merchant';
 import { PricingTab } from './tabs/Pricing';
 import { PlantDesignTab, PlantHeaderTab, PlantOverviewTab, PlantSheetTab, plantKwSummary } from './plant/PlantTabs';
-import { moduleInfo, moduleOf, STAGES, stageOf } from '../modules';
+import { STAGES, stageOf } from '../modules';
+import { CATEGORIES, categoryInfo, JOB_TYPES, jobInfo, jobTypeOf, STEPS, type JobType } from '../jobs';
+import { applyJobType } from '../newJob';
+import { Explain } from '../ui/explain';
 import { Icon } from '../ui/icons';
 import { PoolDesignTab, PoolOverviewTab, PoolSheetTab, poolSummary } from './tools/PoolTabs';
 import { DhwDesignTab, DhwOverviewTab, DhwSheetTab, dhwSummary } from './tools/DhwTabs';
@@ -34,25 +37,11 @@ interface Ctx {
 const ProjectCtx = createContext<Ctx | null>(null);
 export const useProject = () => useContext(ProjectCtx)!;
 
-type Nav = { group: string; tabs: { id: string; label: string }[] }[];
-type Finish = { id: string; label: string; sub: string };
-
-const t = (id: string, label: string) => ({ id, label });
-
-interface ModuleSetup {
-  nav: Nav;
-  finish: Finish;
-  body: (tab: string) => ReactNode;
-}
-
-const PROPERTY_NAV: Nav = [
-  { group: 'Survey', tabs: [t('overview', 'Overview'), t('plan', 'Floor plan'), t('rooms', 'Rooms & fabric')] },
-  { group: 'Design', tabs: [t('heatloss', 'Heat loss'), t('emitters', 'Radiators'), t('ufh', 'Underfloor'), t('pipework', 'Pipework & Kv'), t('equipment', 'Equipment')] },
-  { group: 'Pricing', tabs: [t('pricing', 'Materials & quote'), t('merchant', 'Merchant request')] },
-];
-
-function propertyBody(tab: string): ReactNode {
-  switch (tab) {
+/** What each step shows. Overview and the printed sheets depend on the job's family. */
+function stepBody(step: string, module: ModuleId): ReactNode {
+  switch (step) {
+    case 'overview':
+      return module === 'plantroom' ? <PlantOverviewTab /> : module === 'pool' ? <PoolOverviewTab /> : module === 'dhw' ? <DhwOverviewTab /> : <OverviewTab />;
     case 'plan':
       return <PlanTab />;
     case 'rooms':
@@ -65,8 +54,16 @@ function propertyBody(tab: string): ReactNode {
       return <UfhTab />;
     case 'pipework':
       return <PipeworkTab />;
+    case 'dhw':
+      return <DhwDesignTab />;
     case 'equipment':
       return <EquipmentTab />;
+    case 'plant':
+      return <PlantDesignTab />;
+    case 'header':
+      return <PlantHeaderTab />;
+    case 'pool':
+      return <PoolDesignTab />;
     case 'pricing':
       return <PricingTab />;
     case 'merchant':
@@ -77,44 +74,39 @@ function propertyBody(tab: string): ReactNode {
       return <ReportTab kinds={['cover', 'summary', 'plan', 'heatloss']} title="Heat loss report" />;
     case 'survey-report':
       return <ReportTab kinds={['cover', 'plan', 'heatloss', 'equipment']} title="Survey summary" />;
+    case 'plant-sheet':
+      return <PlantSheetTab />;
+    case 'pool-sheet':
+      return <PoolSheetTab />;
+    case 'dhw-sheet':
+      return <DhwSheetTab />;
     default:
       return <OverviewTab />;
   }
 }
 
-const SETUPS: Record<ModuleId, ModuleSetup> = {
-  heating: { nav: PROPERTY_NAV, finish: { id: 'handover', label: 'Handover pack', sub: 'End of job' }, body: propertyBody },
-  heatloss: {
-    nav: [{ group: 'Heat loss', tabs: [t('overview', 'Overview & conditions'), t('plan', 'Floor plan'), t('rooms', 'Rooms & fabric'), t('heatloss', 'Results')] }],
-    finish: { id: 'report', label: 'Heat loss report', sub: 'Print for the customer' },
-    body: propertyBody,
-  },
-  survey: {
-    nav: [{ group: 'Site survey', tabs: [t('overview', 'Overview'), t('plan', 'Floor plan'), t('rooms', 'Rooms & fabric'), t('equipment', 'Existing equipment')] }],
-    finish: { id: 'survey-report', label: 'Survey summary', sub: 'Print or send' },
-    body: propertyBody,
-  },
-  materials: {
-    nav: [{ group: 'Pipe runs & materials', tabs: [t('overview', 'Overview'), t('pipework', 'Pipe runs & Kv'), t('equipment', 'Equipment'), t('pricing', 'Materials & quote')] }],
-    finish: { id: 'merchant', label: 'Merchant request', sub: 'Send for prices' },
-    body: propertyBody,
-  },
-  plantroom: {
-    nav: [{ group: 'Plant room', tabs: [t('overview', 'Overview'), t('plant', 'Sources & circuits'), t('header', 'Header & pumps')] }],
-    finish: { id: 'sheet', label: 'Design sheet', sub: 'Print for the job' },
-    body: (tab) => (tab === 'plant' ? <PlantDesignTab /> : tab === 'header' ? <PlantHeaderTab /> : tab === 'sheet' ? <PlantSheetTab /> : <PlantOverviewTab />),
-  },
-  pool: {
-    nav: [{ group: 'Pool heating', tabs: [t('overview', 'Overview'), t('pool', 'Pool')] }],
-    finish: { id: 'sheet', label: 'Design sheet', sub: 'Print for the job' },
-    body: (tab) => (tab === 'pool' ? <PoolDesignTab /> : tab === 'sheet' ? <PoolSheetTab /> : <PoolOverviewTab />),
-  },
-  dhw: {
-    nav: [{ group: 'Hot water', tabs: [t('overview', 'Overview'), t('dhw', 'Hot water')] }],
-    finish: { id: 'sheet', label: 'Design sheet', sub: 'Print for the job' },
-    body: (tab) => (tab === 'dhw' ? <DhwDesignTab /> : tab === 'sheet' ? <DhwSheetTab /> : <DhwOverviewTab />),
-  },
-};
+/** The job's steps as a tick list, shown on the overview. */
+function StepChecklist({ job, project, loss }: { job: JobType; project: Project; loss: ProjectLoss }) {
+  const all = [...job.steps.filter((s) => s !== 'overview'), job.finish];
+  return (
+    <div className="page checklist-wrap">
+      <ol className="checklist">
+        {all.map((id) => {
+          const done = id !== job.finish && stepDone(id, project, loss);
+          return (
+            <li key={id} className={done ? 'done' : ''}>
+              <a href={`#/p/${project.id}/${id}`}>
+                <span className="ck">{done && <Icon name="check" size={13} />}</span>
+                <span>{STEPS[id]?.label}</span>
+                <Icon name="chevronRight" size={15} />
+              </a>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
 
 export function ProjectView({ project, tab }: { project: Project; tab: string }) {
   const loss = useMemo(() => projectHeatLoss(project), [project]);
@@ -128,9 +120,12 @@ export function ProjectView({ project, tab }: { project: Project; tab: string })
     },
   };
 
-  const module = moduleOf(project);
-  const info = moduleInfo(module);
-  const setup = SETUPS[module] ?? SETUPS.heating;
+  const job = jobTypeOf(project);
+  const module = job.module;
+  const cat = categoryInfo(job.category);
+  // Old links used 'sheet' for every tool's printout.
+  const step = tab === 'sheet' ? job.finish : tab;
+  const def = STEPS[step];
   const summary =
     module === 'plantroom'
       ? plantKwSummary(project)
@@ -140,24 +135,25 @@ export function ProjectView({ project, tab }: { project: Project; tab: string })
           ? { ...dhwSummary(project), value: undefined }
           : { label: 'Design heat loss', value: loss.totalW / 1000, sub: `${project.rooms.length} rooms · ${fmt(loss.area, 0)} m² · ${project.settings.externalTemp} °C outside` };
 
-  const upgrade = async () => {
-    if (!(await ask.confirm(`Open “${project.name}” as a whole property project? Everything entered so far is kept, and the full survey → design → pricing → handover menu appears.`))) return;
-    ctx.update((d) => void (d.module = 'heating'));
+  const changeType = async (id: string) => {
+    const next = jobInfo(id);
+    if (!next || next.id === job.id) return;
+    if (!(await ask.confirm(`Change “${project.name}” to ${next.name}? Everything entered so far is kept; the steps change to suit the new job type.`))) return;
+    ctx.update((d) => applyJobType(d, next.id));
   };
 
   const address = [project.customer.address.split('\n')[0], project.customer.postcode].filter(Boolean).join(', ');
   const total = summary.value === undefined ? summary.sub.split(' · ')[0] : `${fmt(summary.value, 2)} kW`;
-  let n = 0;
 
   return (
     <ProjectCtx.Provider value={ctx}>
       <div className="project">
         <header className="pj-head no-print">
-          <a href={`#/m/${module}`} className="pj-back" aria-label={`Back to ${info?.name}`} title={`Back to ${info?.name}`}>
+          <a href={`#/c/${job.category}`} className="pj-back" aria-label={`Back to ${cat?.name}`} title={`Back to ${cat?.name}`}>
             <Icon name="back" />
           </a>
           <label className={`pj-photo ${project.photo ? '' : 'empty'}`} title={project.photo ? 'Change property photo' : 'Add property photo'}>
-            {project.photo ? <img src={project.photo} alt="" /> : <Icon name="heating" />}
+            {project.photo ? <img src={project.photo} alt="" /> : <Icon name={job.icon} />}
             <input
               type="file"
               accept="image/*"
@@ -172,6 +168,9 @@ export function ProjectView({ project, tab }: { project: Project; tab: string })
             />
           </label>
           <div className="pj-title">
+            <p className="pg-crumb">
+              <a href={`#/c/${job.category}`}>{cat?.name}</a> / {job.name}
+            </p>
             <h1>{project.name}</h1>
             <p>{address || project.customer.name || 'No address yet'}</p>
           </div>
@@ -188,42 +187,52 @@ export function ProjectView({ project, tab }: { project: Project; tab: string })
               ))}
               <option value="archived">Archived</option>
             </select>
-            {info?.partOfProperty && (
-              <button className="btn-line" onClick={upgrade}>
-                Open as whole property
-              </button>
-            )}
-            <a href={`#/p/${project.id}/${setup.finish.id}`} className={`btn-black ${tab === setup.finish.id ? 'on' : ''}`} title={setup.finish.sub}>
-              <Icon name="download" size={16} /> {setup.finish.label}
+            <select className="pj-stage" value={job.id} onChange={(e) => changeType(e.target.value)} aria-label="Job type" title="Change job type">
+              {CATEGORIES.filter((c) => c.id !== 'business').map((c) => {
+                const live = JOB_TYPES.filter((j) => j.category === c.id && j.live);
+                return live.length ? (
+                  <optgroup key={c.id} label={c.name}>
+                    {live.map((j) => (
+                      <option key={j.id} value={j.id}>
+                        {j.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                ) : null;
+              })}
+            </select>
+            <a href={`#/p/${project.id}/${job.finish}`} className={`btn-primary ${step === job.finish ? 'on' : ''}`}>
+              <Icon name="download" size={16} /> {STEPS[job.finish]?.label}
             </a>
           </div>
         </header>
-        <nav className="pj-tabs no-print">
-          {setup.nav.map((g) => (
-            <div key={g.group} className="pj-group">
-              {setup.nav.length > 1 && <span className="pj-group-l">{g.group}</span>}
-              {g.tabs.map((x) => {
-                n++;
-                const done = stepDone(x.id, project, loss);
-                return (
-                  <a key={x.id} href={`#/p/${project.id}/${x.id}`} className={`pj-tab ${tab === x.id ? 'on' : ''} ${done ? 'done' : ''}`}>
-                    <span className="pj-n">{done ? '✓' : n}</span>
-                    {x.label}
-                  </a>
-                );
-              })}
-            </div>
-          ))}
+        <nav className="pj-tabs no-print" aria-label="Job steps">
+          {job.steps.map((id, i) => {
+            const done = stepDone(id, project, loss);
+            return (
+              <a key={id} href={`#/p/${project.id}/${id}`} className={`pj-tab ${step === id ? 'on' : ''} ${done ? 'done' : ''}`} aria-current={step === id ? 'page' : undefined}>
+                <span className="pj-n">{done ? <Icon name="check" size={12} /> : i + 1}</span>
+                {STEPS[id]?.label}
+              </a>
+            );
+          })}
         </nav>
-        {tab === 'plan' ? (
+        {def && (
+          <div className="pj-explain">
+            <Explain id={`step-${step}`}>{def.explain}</Explain>
+            {step === 'overview' && job.note && <p className="pj-note">{job.note}</p>}
+          </div>
+        )}
+        {step === 'overview' && <StepChecklist job={job} project={project} loss={loss} />}
+        {step === 'plan' ? (
           <div className="pj-plan">
             <aside className="pj-plan-side no-print">
               <PlanSidePanels />
             </aside>
-            <div className="content">{setup.body(tab)}</div>
+            <div className="content">{stepBody(step, module)}</div>
           </div>
         ) : (
-          <div className="content">{setup.body(tab)}</div>
+          <div className="content">{stepBody(step, module)}</div>
         )}
       </div>
     </ProjectCtx.Provider>

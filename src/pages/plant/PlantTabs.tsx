@@ -4,7 +4,8 @@ import type { Project } from '../../engine/model';
 import { MATERIAL_NAMES, PIPE_SIZES, type PipeMaterial } from '../../engine/pipes';
 import { analysePlant, CIRCUIT_TYPES, defaultPlantRoom, type CircuitType, type HeatSource, type PlantCircuit, type PlantRoom } from '../../engine/plant';
 import { useStore } from '../../store';
-import { moduleInfo, moduleOf } from '../../modules';
+import { moduleOf } from '../../modules';
+import { jobTypeOf } from '../../jobs';
 import { analysePool, defaultPoolInputs } from '../../engine/pool';
 import { defaultDhw } from '../../data/dhwDefaults';
 import { analyseDhw } from '../tools/DhwTabs';
@@ -261,7 +262,7 @@ function ImportCircuit() {
       <option value="">Import from a project…</option>
       {sources.map((x) => (
         <option key={x.id} value={x.id}>
-          {moduleInfo(moduleOf(x))?.short}: {x.name}
+          {jobTypeOf(x).short}: {x.name}
         </option>
       ))}
     </select>

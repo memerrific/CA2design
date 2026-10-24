@@ -3,6 +3,7 @@ import { buildTakeoff, CATEGORY_ORDER } from '../engine/takeoff';
 import { projectHeatLoss } from '../engine/heatloss';
 import { store, useStore } from '../store';
 import { NumField } from '../ui/fields';
+import { Explain } from '../ui/explain';
 
 /** The company price list: every item your designs have used, with your saved unit cost. */
 export function PricesPage() {
@@ -39,9 +40,10 @@ export function PricesPage() {
       <header className="bd-head">
         <h1>Price list</h1>
       </header>
-      <p className="bd-sub">
-        Your unit costs, used to price every project. Items appear here once a design uses them; prices you type on a project’s Pricing step are saved here too. {priced} of {rows.length} items priced.
-      </p>
+      <Explain id="prices">
+        Your unit costs, used to price the materials on every job. Items appear here once a design uses them; prices typed on a job’s Materials step are
+        saved here too. {priced} of {rows.length} items priced.
+      </Explain>
       <div className="bd-filters">
         <input className="bd-search" type="search" placeholder="Search items…" value={query} onChange={(e) => setQuery(e.target.value)} />
       </div>

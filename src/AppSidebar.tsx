@@ -1,9 +1,7 @@
-import { useEffect, useState } from 'react';
-import { go } from './App';
+import { useState } from 'react';
 import { uid } from './engine/factory';
 import type { Project } from './engine/model';
-import { MODULES, moduleOf } from './modules';
-import { newProjectFor } from './pages/Board';
+import { CATEGORIES, jobTypeOf } from './jobs';
 import { downloadJson, readFile, store, useStore } from './store';
 import { ask } from './ui/dialog';
 import { Icon } from './ui/icons';
@@ -11,7 +9,6 @@ import { Icon } from './ui/icons';
 /** Left navigation. Collapses to an icon rail (remembered per browser). */
 export function AppSidebar({ route }: { route: string[] }) {
   const { projects, company } = useStore();
-  const [menu, setMenu] = useState<number | null>(null);
   const [rail, setRailState] = useState(() => {
     try {
       return localStorage.getItem('ca2d.rail') === '1';
@@ -27,19 +24,10 @@ export function AppSidebar({ route }: { route: string[] }) {
       /* not saved */
     }
   };
-  const path = route.join('/');
-  useEffect(() => setMenu(null), [path]);
-  const live = MODULES.filter((m) => m.live);
-  const planned = MODULES.filter((m) => !m.live);
   const at = (path: string) => route.join('/') === path;
-  const count = (id: string) => projects.filter((p) => moduleOf(p) === id && p.stage !== 'archived').length;
-
-  const create = (module: string) => {
-    setMenu(null);
-    const p = newProjectFor(module as Project['module'] & string);
-    store.upsertProject(p);
-    go(`p/${p.id}/overview`);
-  };
+  const live = projects.filter((p) => p.stage !== 'archived');
+  const open = live.length;
+  const count = (id: string) => live.filter((p) => jobTypeOf(p).category === id).length;
 
   const importFile = async (file: File) => {
     try {
@@ -81,59 +69,22 @@ export function AppSidebar({ route }: { route: string[] }) {
 
       <nav className="sb-nav">
         <div className="sb-group">
-          <h6>Projects</h6>
-          <Item href="#/" icon="board" label="All projects" on={route.length === 0 || at('list')} badge={projects.filter((p) => p.stage !== 'archived').length} />
-          <div className="sb-new">
-            <button className={`sb-item ${menu !== null ? 'on' : ''}`} onClick={(e) => setMenu(menu === null ? e.currentTarget.getBoundingClientRect().top : null)} title={rail ? 'New project' : undefined}>
-              <Icon name="plusCircle" />
-              <span className="sb-label">New project</span>
-            </button>
-            {menu !== null && <div className="sb-backdrop" onClick={() => setMenu(null)} />}
-            {menu !== null && (
-              <div className="sb-menu side" role="menu" style={{ top: menu }}>
-                <p>What are you starting?</p>
-                {live.map((m) => (
-                  <button key={m.id} role="menuitem" onClick={() => create(String(m.id))}>
-                    <Icon name={String(m.id)} />
-                    <span>
-                      <b>{m.name}</b>
-                      <small>{m.blurb}</small>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <Item href="#/" icon="home" label="Home" on={route.length === 0} />
+          <Item href="#/jobs" icon="board" label="Jobs" on={route[0] === 'jobs'} badge={open} />
+          <Item href="#/new" icon="plusCircle" label="New job" on={route[0] === 'new'} />
         </div>
-
         <div className="sb-group">
-          <h6>Sections</h6>
-          {live.map((m) => (
-            <Item key={m.id} href={`#/m/${m.id}`} icon={String(m.id)} label={m.short === 'Property' ? 'Whole property' : m.name} on={route[0] === 'm' && route[1] === m.id} badge={count(String(m.id))} />
+          <h6>Categories</h6>
+          {CATEGORIES.map((c) => (
+            <Item key={c.id} href={`#/c/${c.id}`} icon={c.icon} label={c.name} on={route[0] === 'c' && route[1] === c.id} badge={c.id === 'business' ? undefined : count(c.id)} />
           ))}
         </div>
-
         <div className="sb-group">
           <h6>More</h6>
           <Item href="#/prices" icon="coins" label="Price list" on={at('prices')} />
           <Item href="#/methods" icon="book" label="Methods & sources" on={at('methods')} />
           <Item href="#/settings" icon="gear" label="Settings & branding" on={at('settings')} />
         </div>
-        {!rail && (
-          <details className="sb-group sb-soon">
-            <summary className="sb-item">
-              <Icon name="clock" />
-              <span className="sb-label">Coming soon</span>
-              <span className="sb-badge">{planned.length}</span>
-            </summary>
-            {planned.map((m) => (
-              <span key={m.id} className="sb-item soon">
-                <Icon name={String(m.id)} />
-                <span className="sb-label">{m.name}</span>
-              </span>
-            ))}
-          </details>
-        )}
       </nav>
 
       <div className="sb-foot">
