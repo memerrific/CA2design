@@ -31,18 +31,25 @@ export function AppSidebar({ route }: { route: string[] }) {
   const count = (id: string) => live.filter((p) => jobTypeOf(p).category === id).length;
 
   const importFile = async (file: File) => {
+    let data: unknown;
     try {
-      const data = JSON.parse(await readFile(file, 'text'));
-      const list: Project[] = Array.isArray(data) ? data : [data];
-      for (const p of list) {
-        if (!p || !p.id || !Array.isArray(p.rooms)) throw new Error('Not a CA2 Designer project file');
-        const clash = projects.some((x) => x.id === p.id);
-        store.upsertProject(clash ? { ...p, id: uid(), name: `${p.name} (imported)` } : p);
-      }
-      void ask.alert(`Imported ${list.length} project${list.length === 1 ? '' : 's'}.`);
-    } catch (e) {
-      void ask.alert(`Could not import: ${(e as Error).message}`);
+      data = JSON.parse(await readFile(file, 'text'));
+    } catch {
+      void ask.alert(`“${file.name}” isn’t a CA2 Designer backup or job file. Choose a .json file saved from Back up all projects or a job’s Export file.`);
+      return;
     }
+    const list = (Array.isArray(data) ? data : [data]) as Project[];
+    const valid = list.filter((p) => p && typeof p === 'object' && typeof p.id === 'string' && Array.isArray(p.rooms));
+    if (!valid.length) {
+      void ask.alert(list.length ? 'No CA2 Designer jobs were found in that file.' : 'That file has no jobs in it.');
+      return;
+    }
+    for (const p of valid) {
+      const clash = store.get().projects.some((x) => x.id === p.id);
+      store.upsertProject(clash ? { ...p, id: uid(), name: `${p.name} (imported)` } : p);
+    }
+    const skipped = list.length - valid.length;
+    void ask.alert(`Imported ${valid.length} job${valid.length === 1 ? '' : 's'}.${skipped ? ` ${skipped} item${skipped === 1 ? ' was' : 's were'} skipped because ${skipped === 1 ? 'it isn’t a' : 'they aren’t'} CA2 Designer job${skipped === 1 ? '' : 's'}.` : ''}`);
   };
 
   const Item = ({ href, icon, label, on, badge }: { href: string; icon: string; label: string; on: boolean; badge?: number }) => (
@@ -101,7 +108,11 @@ export function AppSidebar({ route }: { route: string[] }) {
         <label className="sb-item" title={rail ? 'Import projects' : undefined}>
           <Icon name="upload" />
           <span className="sb-label">Import projects</span>
-          <input type="file" accept=".json,application/json" hidden onChange={(e) => e.target.files?.[0] && importFile(e.target.files[0])} />
+          <input type="file" accept=".json,application/json" hidden onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = '';
+              if (f) importFile(f);
+            }} />
         </label>
         <button
           className="sb-item"

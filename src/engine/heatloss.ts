@@ -39,7 +39,7 @@ export const GROUND_FACTOR = 1.45;
 /** ρ·cp of air, Wh/(m³·K). */
 const AIR_HEAT = 0.33;
 
-export type FullSettings = Required<Omit<ProjectSettings, 'groundFloor'>> & { groundFloor: GroundFloorSettings };
+export type FullSettings = Required<Omit<ProjectSettings, 'groundFloor' | 'meanRegion'>> & { groundFloor: GroundFloorSettings; meanRegion?: string };
 
 /** Project settings with defaults filled in for fields older projects don't have. */
 export function settingsOf(p: Pick<Project, 'settings'>): FullSettings {

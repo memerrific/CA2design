@@ -80,9 +80,9 @@ export function PoolDesignTab() {
               ]}
             />
             <Select<PoolActivity> label="Use" value={x.activity} onChange={(v) => set((p) => void (p.activity = v))} options={POOL_ACTIVITY.map((a) => ({ value: a.id, label: a.name }))} />
-            <NumField label="Length" unit="m" value={x.length} onChange={(v) => set((p) => void (p.length = v))} />
-            <NumField label="Width" unit="m" value={x.width} onChange={(v) => set((p) => void (p.width = v))} />
-            <NumField label="Average depth" unit="m" step={0.05} value={x.avgDepth} onChange={(v) => set((p) => void (p.avgDepth = v))} />
+            <NumField label="Length" unit="m" min={0.5} value={x.length} onChange={(v) => set((p) => void (p.length = v))} />
+            <NumField label="Width" unit="m" min={0.5} value={x.width} onChange={(v) => set((p) => void (p.width = v))} />
+            <NumField label="Average depth" unit="m" min={0.3} step={0.05} value={x.avgDepth} onChange={(v) => set((p) => void (p.avgDepth = v))} />
             <NumField label="Volume override" unit="m³ (0 = auto)" value={x.volumeOverride} onChange={(v) => set((p) => void (p.volumeOverride = v))} />
             <NumField label="Water temperature" unit="°C" value={x.waterTemp} onChange={(v) => set((p) => void (p.waterTemp = v))} />
             <NumField label="Fill / mains water" unit="°C" value={x.fillTemp} onChange={(v) => set((p) => void (p.fillTemp = v))} />
@@ -97,7 +97,7 @@ export function PoolDesignTab() {
             {x.type === 'outdoor' ? (
               <>
                 <NumField label="Wind at water surface" unit="m/s" step={0.1} value={x.windSpeed} onChange={(v) => set((p) => void (p.windSpeed = v))} />
-                <NumField label="Cloud cover" unit="0–1" step={0.1} value={x.cloudFraction} onChange={(v) => set((p) => void (p.cloudFraction = v))} />
+                <NumField label="Cloud cover" unit="0–1" step={0.1} max={1} value={x.cloudFraction} onChange={(v) => set((p) => void (p.cloudFraction = v))} />
               </>
             ) : (
               <NumField label="Air speed over water" unit="m/s" step={0.05} value={x.indoorAirSpeed} onChange={(v) => set((p) => void (p.indoorAirSpeed = v))} />

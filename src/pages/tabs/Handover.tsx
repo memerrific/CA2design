@@ -119,14 +119,15 @@ export function ReportTab({ kinds, title }: { kinds: HandoverSection['kind'][]; 
       </div>
       <div className="pack">
         {kinds.map((k) => (
-          <PackSection key={k} s={{ id: k, kind: k, title: k === 'cover' ? title : titles[k] ?? k, enabled: true }} />
+          <PackSection key={k} report s={{ id: k, kind: k, title: k === 'cover' ? title : titles[k] ?? k, enabled: true }} />
         ))}
       </div>
     </div>
   );
 }
 
-function PackSection({ s }: { s: HandoverSection }) {
+/** `report`: a survey or heat loss report, written before anything is installed. */
+function PackSection({ s, report }: { s: HandoverSection; report?: boolean }) {
   const { project: p, loss } = useProject();
   const { company } = useStore();
   const st = p.settings;
@@ -148,7 +149,7 @@ function PackSection({ s }: { s: HandoverSection }) {
           {p.photo && <img className="cover-photo" src={p.photo} alt="The property" />}
           <p className="eyebrow">{company.tagline}</p>
           <h1>{s.title === 'Cover' ? 'Heating System Handover Pack' : s.title}</h1>
-          <h3>{p.systemType}</h3>
+          {!report && <h3>{p.systemType}</h3>}
           <div className="cover-meta">
             <div>
               <span>Property</span>
@@ -159,7 +160,7 @@ function PackSection({ s }: { s: HandoverSection }) {
               </p>
             </div>
             <div>
-              <span>Installed by</span>
+              <span>{report ? 'Prepared by' : 'Installed by'}</span>
               <b>{company.name}</b>
               <p style={{ whiteSpace: 'pre-line' }}>{[company.address, company.phone, company.email, company.website].filter(Boolean).join('\n')}</p>
             </div>
@@ -213,10 +214,12 @@ function PackSection({ s }: { s: HandoverSection }) {
           </div>
           <table className="tbl">
             <tbody>
-              <tr>
-                <th>System</th>
-                <td>{p.systemType}</td>
-              </tr>
+              {!report && (
+                <tr>
+                  <th>System</th>
+                  <td>{p.systemType}</td>
+                </tr>
+              )}
               {sources.map((e) => (
                 <tr key={e.id}>
                   <th>{e.category}</th>

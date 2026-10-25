@@ -1,7 +1,7 @@
 import { roomEmitterOutput } from '../engine/design';
 import type { ProjectLoss } from '../engine/heatloss';
 import type { Project } from '../engine/model';
-import { fmt } from '../ui/fields';
+import { plural, fmt } from '../ui/fields';
 import { LAYERS, planUi, usePlanUi } from '../ui/planUi';
 import { useProject } from './ProjectView';
 import { LEVELS } from './tabs/Rooms';
@@ -46,7 +46,7 @@ export function PlanSidePanels() {
   const ui = usePlanUi();
   const used = [...new Set([...Object.keys(p.plans), ...p.rooms.map((r) => r.level)])].sort((a, b) => LEVELS.indexOf(a) - LEVELS.indexOf(b));
   const floors = used.length ? used : ['Ground'];
-  const current = floors.includes(ui.level) ? ui.level : floors[0];
+  const current = ui.level;
   const spare = LEVELS.filter((l) => !floors.includes(l));
 
   return (
@@ -69,7 +69,7 @@ export function PlanSidePanels() {
           return (
             <button key={l} className={`floor ${l === current ? 'on' : ''}`} onClick={() => planUi.set({ level: l, selection: null })}>
               <span>{l} floor</span>
-              <small>{rooms.length ? `${rooms.length} rooms · ${fmt(kw, 1)} kW` : 'empty'}</small>
+              <small>{rooms.length ? `${plural(rooms.length, 'room')} · ${fmt(kw, 1)} kW` : 'empty'}</small>
             </button>
           );
         })}

@@ -1,8 +1,8 @@
-import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react';
 import { projectHeatLoss, type ProjectLoss } from '../engine/heatloss';
 import type { ModuleId, Project } from '../engine/model';
 import { store } from '../store';
-import { fmt } from '../ui/fields';
+import { plural, fmt } from '../ui/fields';
 import { OverviewTab } from './tabs/Overview';
 import { RoomsTab } from './tabs/Rooms';
 import { PlanTab } from './tabs/Plan';
@@ -16,7 +16,7 @@ import { MerchantTab } from './tabs/Merchant';
 import { PricingTab } from './tabs/Pricing';
 import { PlantDesignTab, PlantHeaderTab, PlantOverviewTab, PlantSheetTab, plantKwSummary } from './plant/PlantTabs';
 import { STAGES, stageOf } from '../modules';
-import { CATEGORIES, categoryInfo, JOB_TYPES, jobInfo, jobTypeOf, STEPS, type JobType } from '../jobs';
+import { CATEGORIES, categoryInfo, JOB_TYPES, jobInfo, jobName, jobTypeOf, STEPS, type JobType } from '../jobs';
 import { applyJobType } from '../newJob';
 import { Explain } from '../ui/explain';
 import { Icon } from '../ui/icons';
@@ -114,7 +114,10 @@ export function ProjectView({ project, tab }: { project: Project; tab: string })
     project,
     loss,
     update: (fn) => {
-      const draft = structuredClone(project);
+      // Start from the latest saved copy, not the one this page was drawn with:
+      // after a confirm box or a lookup, an earlier save may already have landed.
+      const latest = store.get().projects.find((x) => x.id === project.id) ?? project;
+      const draft = structuredClone(latest);
       fn(draft);
       store.upsertProject(draft);
     },
@@ -123,8 +126,13 @@ export function ProjectView({ project, tab }: { project: Project; tab: string })
   const job = jobTypeOf(project);
   const module = job.module;
   const cat = categoryInfo(job.category);
-  // Old links used 'sheet' for every tool's printout.
-  const step = tab === 'sheet' ? job.finish : tab;
+  // Old links used 'sheet' for every tool's printout. A step this job type doesn't have
+  // (after changing type, or an old link) opens the overview instead.
+  const asked = tab === 'sheet' ? job.finish : tab;
+  const step = asked === 'overview' || job.steps.includes(asked) || asked === job.finish ? asked : 'overview';
+  useEffect(() => {
+    if (step !== tab) window.location.replace(`#/p/${project.id}/${step}`);
+  }, [step, tab, project.id]);
   const def = STEPS[step];
   const summary =
     module === 'plantroom'
@@ -133,7 +141,7 @@ export function ProjectView({ project, tab }: { project: Project; tab: string })
         ? poolSummary(project)
         : module === 'dhw'
           ? { ...dhwSummary(project), value: undefined }
-          : { label: 'Design heat loss', value: loss.totalW / 1000, sub: `${project.rooms.length} rooms · ${fmt(loss.area, 0)} m² · ${project.settings.externalTemp} °C outside` };
+          : { label: 'Design heat loss', value: loss.totalW / 1000, sub: `${plural(project.rooms.length, 'room')} · ${fmt(loss.area, 0)} m² · ${project.settings.externalTemp} °C outside` };
 
   const changeType = async (id: string) => {
     const next = jobInfo(id);
@@ -160,6 +168,7 @@ export function ProjectView({ project, tab }: { project: Project; tab: string })
               hidden
               onChange={async (e) => {
                 const f = e.target.files?.[0];
+                e.target.value = '';
                 if (f) {
                   const url = await downscaleImage(f, 900);
                   ctx.update((d) => void (d.photo = url));
@@ -171,7 +180,7 @@ export function ProjectView({ project, tab }: { project: Project; tab: string })
             <p className="pg-crumb">
               <a href={`#/c/${job.category}`}>{cat?.name}</a> / {job.name}
             </p>
-            <h1>{project.name}</h1>
+            <h1>{jobName(project)}</h1>
             <p>{address || project.customer.name || 'No address yet'}</p>
           </div>
           <div className="pj-total" title={summary.sub}>

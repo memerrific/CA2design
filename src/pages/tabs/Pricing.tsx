@@ -152,13 +152,13 @@ export function PricingTab() {
                       <TextField value={x.description} onChange={(v) => setPricing((y) => void (y.extras[i].description = v))} />
                     </td>
                     <td>
-                      <NumField value={x.qty} width={60} onChange={(v) => setPricing((y) => void (y.extras[i].qty = v))} />
+                      <NumField min={0} value={x.qty} width={60} onChange={(v) => setPricing((y) => void (y.extras[i].qty = v))} />
                     </td>
                     <td>
                       <TextField value={x.unit} onChange={(v) => setPricing((y) => void (y.extras[i].unit = v))} />
                     </td>
                     <td>
-                      <NumField value={x.unitCost} width={80} step={0.01} onChange={(v) => setPricing((y) => void (y.extras[i].unitCost = v))} />
+                      <NumField min={0} value={x.unitCost} width={80} step={0.01} onChange={(v) => setPricing((y) => void (y.extras[i].unitCost = v))} />
                     </td>
                     <td className="r">{money(x.qty * x.unitCost)}</td>
                     <td>
@@ -202,10 +202,10 @@ export function PricingTab() {
                     <TextField value={l.description} onChange={(v) => setPricing((y) => void (y.labour[i].description = v))} />
                   </td>
                   <td>
-                    <NumField value={l.days} width={60} step={0.5} onChange={(v) => setPricing((y) => void (y.labour[i].days = v))} />
+                    <NumField min={0} value={l.days} width={60} step={0.5} onChange={(v) => setPricing((y) => void (y.labour[i].days = v))} />
                   </td>
                   <td>
-                    <NumField value={l.dayRate} width={80} onChange={(v) => setPricing((y) => void (y.labour[i].dayRate = v))} />
+                    <NumField min={0} value={l.dayRate} width={80} onChange={(v) => setPricing((y) => void (y.labour[i].dayRate = v))} />
                   </td>
                   <td className="r">{money(l.days * l.dayRate)}</td>
                   <td>
@@ -294,7 +294,7 @@ function LineRow({ l }: { l: PricedLine }) {
         <small className="src">{l.source}</small>
       </td>
       <td className="r">
-        <NumField value={l.qty} width={70} onChange={(v) => setOverride({ qty: v })} />
+        <NumField min={0} value={l.qty} width={70} onChange={(v) => setOverride({ qty: v })} />
         {l.edited && (
           <button className="link small" onClick={() => setOverride({ qty: undefined })} title="Go back to the quantity from the design">
             reset
@@ -303,7 +303,7 @@ function LineRow({ l }: { l: PricedLine }) {
       </td>
       <td>{l.unit}</td>
       <td className="r">
-        <NumField value={l.unitCost} width={80} step={0.01} onChange={(v) => store.setPrice(l.key, v)} title="Saved to your price list" />
+        <NumField value={l.unitCost} min={0} width={80} step={0.01} onChange={(v) => store.setPrice(l.key, v)} title="Saved to your price list" />
       </td>
       <td className="r">{money(l.total)}</td>
       <td />

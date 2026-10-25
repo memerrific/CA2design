@@ -14,7 +14,7 @@ import type { DhwProject, Project } from '../../engine/model';
 import { useStore } from '../../store';
 import { downscaleImage } from '../../ui/image';
 import { defaultDhw } from '../../data/dhwDefaults';
-import { Card, fmt, NumField, Pill, Select, Stat, TextField } from '../../ui/fields';
+import { plural, Card, fmt, NumField, Pill, Select, Stat, TextField } from '../../ui/fields';
 import { useProject } from '../ProjectView';
 import { SheetPage, SimpleOverviewTab } from './SimpleOverview';
 
@@ -250,6 +250,7 @@ export function DhwDesignTab() {
                 hidden
                 onChange={async (e) => {
                   const f = e.target.files?.[0];
+                  e.target.value = '';
                   if (f) {
                     const url = await downscaleImage(f);
                     set((p) => void p.photos.push(url));
@@ -390,7 +391,7 @@ export function DhwSheetTab() {
           <div>
             <span>Household</span>
             <b>
-              {x.demand.occupants} people, {x.demand.bathrooms ?? '–'} bathrooms
+              {plural(x.demand.occupants, 'person', 'people')}, {x.demand.bathrooms === undefined ? '– bathrooms' : plural(x.demand.bathrooms, 'bathroom')}
             </b>
           </div>
           <div>

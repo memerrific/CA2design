@@ -189,3 +189,25 @@ export const DEFAULT_COMPANY: CompanyProfile = {
   accreditations: 'OFTEC · NICEIC · Heat Geek trained',
   footer: 'This pack was prepared from the survey and design information available at handover. Keep it with the property documents.',
 };
+
+/**
+ * Remove a room and tidy everything that pointed at it: walls, floors and
+ * ceilings that faced it now face an unheated space (so their loss is still
+ * counted), and pipe runs stop serving it.
+ */
+export function removeRoom(p: Project, roomId: string) {
+  p.rooms = p.rooms.filter((r) => r.id !== roomId);
+  for (const r of p.rooms) {
+    for (const w of r.walls)
+      if (w.adjacentRoomId === roomId) {
+        w.adjacentRoomId = undefined;
+        w.boundary = 'unheated';
+      }
+    for (const s of [r.floor, r.ceiling])
+      if (s.adjacentRoomId === roomId) {
+        s.adjacentRoomId = undefined;
+        s.boundary = 'unheated';
+      }
+  }
+  for (const run of p.pipes) run.roomIds = run.roomIds.filter((id) => id !== roomId);
+}

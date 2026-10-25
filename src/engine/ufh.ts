@@ -156,8 +156,10 @@ export function designUfhRoom(i: UfhRoomInput): UfhRoomResult {
   const maxSurfaceTemp = i.isBathroom ? MAX_SURFACE_TEMP.bathroom : MAX_SURFACE_TEMP.occupied;
   const pipeInRoomM = active / (i.spacingMm / 1000);
   // Split into equal loops so each stays under the max length including leads.
-  let loops = Math.max(1, Math.ceil((pipeInRoomM + 2 * i.leadLengthM) / i.maxLoopLengthM));
-  while (loops < 20 && pipeInRoomM / loops + 2 * i.leadLengthM > i.maxLoopLengthM) loops++;
+  // A missing or zero limit would mean endless loops; fall back to a typical 100 m.
+  const maxLoop = i.maxLoopLengthM > 0 ? i.maxLoopLengthM : 100;
+  let loops = Math.max(1, Math.ceil((pipeInRoomM + 2 * i.leadLengthM) / maxLoop));
+  while (loops < 20 && pipeInRoomM / loops + 2 * i.leadLengthM > maxLoop) loops++;
   const loopLengthM = pipeInRoomM / loops + 2 * i.leadLengthM;
   const fs = fluidState(i.fluid, (i.flow + i.ret) / 2);
   const totalFlowLpm = flowForHeat(outputW, i.flow - i.ret, fs) * 60000;

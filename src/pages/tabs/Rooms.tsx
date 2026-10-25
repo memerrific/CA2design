@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { FABRICS, KIND_NAMES, type FabricKind } from '../../data/fabrics';
 import { defaultRoomTemp, ROOM_TYPES, roomType } from '../../data/rooms';
-import { newRoom, newWall, uid } from '../../engine/factory';
+import { newRoom, newWall, removeRoom, uid } from '../../engine/factory';
 import { openingArea, settingsOf, wallGrossArea } from '../../engine/heatloss';
 import type { Boundary, Project, Room, Surface } from '../../engine/model';
 import { Card, fmt, NumField, Select, TextField } from '../../ui/fields';
@@ -109,7 +109,7 @@ function RoomEditor({ room: r, idx, onDeleted }: { room: Room; idx: number; onDe
               className="btn ghost sm danger"
               onClick={async () => {
                 if (!(await ask.confirm(`Delete ${r.name}?`, { danger: true }))) return;
-                update((d) => void d.rooms.splice(idx, 1));
+                update((d) => removeRoom(d, r.id));
                 onDeleted();
               }}
             >

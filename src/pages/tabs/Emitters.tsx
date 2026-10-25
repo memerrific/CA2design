@@ -195,7 +195,13 @@ export function EmittersTab() {
                   </button>
                 </span>
               )}
-              {shortfall > 0 && !sug && <span className="suggest">Short by {fmt(shortfall)} W: too much for panel radiators at this height; try a taller size or UFH.</span>}
+              {shortfall > 0 && !sug && (
+                <span className="suggest">
+                  {out.dT <= 0
+                    ? 'The water is no warmer than the room at this flow temperature, so radiators give no heat. Raise the design flow temperature on the Overview.'
+                    : `Short by ${fmt(shortfall)} W: too much for panel radiators at this height; try a taller size or UFH.`}
+                </span>
+              )}
             </div>
           </Card>
         );

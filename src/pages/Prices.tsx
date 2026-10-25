@@ -76,7 +76,7 @@ export function PricesPage() {
                     {it.uses} project{it.uses === 1 ? '' : 's'}
                   </td>
                   <td>
-                    <NumField value={prices[key] ?? 0} width={90} step={0.01} onChange={(v) => store.setPrice(key, v)} />
+                    <NumField value={prices[key] ?? 0} min={0} width={90} step={0.01} onChange={(v) => store.setPrice(key, v)} />
                   </td>
                 </tr>
               ))}

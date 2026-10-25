@@ -41,7 +41,19 @@ export default function App() {
   let page;
   if (parts[0] === 'p' && parts[1]) {
     const project = projects.find((p) => p.id === parts[1]);
-    page = project ? <ProjectView project={project} tab={parts[2] ?? 'overview'} /> : <p className="empty">Project not found.</p>;
+    page = project ? (
+      <ProjectView project={project} tab={parts[2] ?? 'overview'} />
+    ) : (
+      <div className="pg">
+        <div className="empty-box">
+          <b>That job isn’t on this account</b>
+          <p>It may have been deleted, or it was made on another device or account.</p>
+          <a className="btn-primary" href="#/jobs">
+            Go to your jobs
+          </a>
+        </div>
+      </div>
+    );
   } else if (parts[0] === 'jobs') {
     const job = jobInfo(parts[1] ?? '');
     page = <BoardPage key={parts[1] ?? 'all'} jobType={job?.id} />;

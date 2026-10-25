@@ -49,15 +49,28 @@ function history(id: string) {
 }
 const listeners = new Set<() => void>();
 
+let warned = false;
 function persist() {
-  try {
-    localStorage.setItem(KEY_PROJECTS, JSON.stringify(state.projects));
-    localStorage.setItem(KEY_COMPANY, JSON.stringify(state.company));
-    localStorage.setItem(KEY_PRICES, JSON.stringify(state.prices));
-  } catch (e) {
-    console.warn('Could not save', e);
-    void ask.alert('Could not save to this browser (storage full or blocked). Export your project to keep a copy.');
+  // Each part is saved on its own so one that does not fit (a huge logo) cannot block the others.
+  const parts: [string, unknown][] = [
+    [KEY_PROJECTS, state.projects],
+    [KEY_PRICES, state.prices],
+    [KEY_COMPANY, state.company],
+  ];
+  let failed = false;
+  for (const [key, value] of parts) {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) {
+      failed = true;
+      console.warn('Could not save', key, e);
+    }
   }
+  if (failed && !warned) {
+    warned = true;
+    void ask.alert('This browser’s storage is full, so the last change could not be saved. Back up your jobs, then remove large photos or old jobs (Settings › Data & backup).');
+  }
+  if (!failed) warned = false;
 }
 
 function emit() {

@@ -842,7 +842,7 @@ details.load[open] > * + * {
 }
 .sec-row {
   display: grid;
-  grid-template-columns: auto 1fr auto auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
   gap: 4px;
   align-items: center;
 }
@@ -855,7 +855,7 @@ details.load[open] > * + * {
 }
 .comm-row {
   display: grid;
-  grid-template-columns: 1.4fr 1fr auto;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto;
   gap: 4px;
 }
 .comm-row input {
@@ -3395,7 +3395,7 @@ select.pj-stage {
   --text: #16171a;
   --ink: #16171a;
   --muted: #6b6e76;
-  --muted-ink: #9b9ea6;
+  --muted-ink: #7d8089;
   --raised: #f1f1f3;
   --paper: #f6f6f7;
   --accent: #f36c21;
@@ -4806,5 +4806,50 @@ code.build {
   }
   .sb-me {
     display: none;
+  }
+}
+.num.invalid input {
+  border-color: var(--bad);
+  outline-color: var(--bad);
+}
+.num-error {
+  color: var(--bad);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Fixes from the full test */
+.tbl td select {
+  min-width: 8.5em;
+}
+.pj-tabs {
+  flex-wrap: wrap;
+  row-gap: 0;
+}
+:root[data-theme='dark'] :is(.btn-primary, .btn:not(.ghost), .ws-n, .bd-tab.on span, .pj-tab.on .pj-n, .switch.on) {
+  color: #16171a;
+}
+@media (max-width: 900px) {
+  .pj-tabs {
+    flex-wrap: nowrap;
+  }
+  .handover-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .handover-editor {
+    position: static;
+    max-height: none;
+  }
+  /* The drawing first on a phone; floors and layers underneath */
+  .pj-plan-side {
+    order: 2;
+  }
+}
+@media screen and (max-width: 900px) {
+  /* A4 preview pages scroll on their own on a phone instead of widening the page */
+  .pack {
+    max-width: 100%;
+    overflow-x: auto;
+    justify-items: start;
   }
 }

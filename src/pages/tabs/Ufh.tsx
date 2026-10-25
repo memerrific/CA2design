@@ -127,7 +127,7 @@ export function UfhTab() {
               <NumField label="Active area" unit="%" value={u.activeAreaPct} onChange={(v) => set((x) => void (x.activeAreaPct = v))} />
               <NumField label="Lead length (one way)" unit="m" value={u.leadLength} onChange={(v) => set((x) => void (x.leadLength = v))} />
               <NumField label="Screed over pipe" unit="mm" value={u.screedCover} onChange={(v) => set((x) => void (x.screedCover = v))} />
-              <NumField label="Max loop length" unit="m" value={u.maxLoopLength} onChange={(v) => set((x) => void (x.maxLoopLength = v))} />
+              <NumField label="Max loop length" unit="m" min={10} value={u.maxLoopLength} onChange={(v) => set((x) => void (x.maxLoopLength = v))} />
             </div>
             <div className="stats compact">
               <Stat label="Output" value={fmt(res.fluxWm2)} unit="W/m²" />

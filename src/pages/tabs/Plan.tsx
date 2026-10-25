@@ -3,7 +3,7 @@ import { go } from '../../App';
 import { roomEmitterOutput } from '../../engine/design';
 import { distToSegment, normalisePlan, parseDxf, pointInPolygon } from '../../engine/dxf';
 import { emitterDt50, RAD_TYPES, suggestRadiator } from '../../engine/emitters';
-import { detectAdjacency, roomFromPolygon, uid } from '../../engine/factory';
+import { detectAdjacency, removeRoom, roomFromPolygon, uid } from '../../engine/factory';
 import { polygonArea, settingsOf } from '../../engine/heatloss';
 import type { Emitter, PlanPipe, PlanUnderlay, Project, Pt, RadiatorType, Room } from '../../engine/model';
 import { PIPE_SIZES, pipeSize } from '../../engine/pipes';
@@ -108,7 +108,11 @@ export function PlanTab() {
   const { project: p, update, loss } = useProject();
   const ui = usePlanUi();
   const usedLevels = [...new Set([...Object.keys(p.plans), ...p.rooms.map((r) => r.level)])];
-  const level = usedLevels.includes(ui.level) || p.rooms.length === 0 ? ui.level : usedLevels[0];
+  const level = ui.level || 'Ground';
+  // Opening a different job: show a floor it actually has. Picking a new floor afterwards is kept.
+  useEffect(() => {
+    if (usedLevels.length && !usedLevels.includes(planUi.get().level)) planUi.set({ level: usedLevels[0], selection: null });
+  }, [p.id]);
   const L = ui.layers;
   const sel = ui.selection;
   const select = (s: Selection) => planUi.set({ selection: s });
@@ -206,11 +210,12 @@ export function PlanTab() {
     }
     if (best) return best;
     const last = draft[draft.length - 1];
+    const grid = (v: number) => Math.round(v * 20) / 20; // 50 mm
     if (last) {
-      if (Math.abs(q[0] - last[0]) < 8 * px) return [last[0], q[1]];
-      if (Math.abs(q[1] - last[1]) < 8 * px) return [q[0], last[1]];
+      if (Math.abs(q[0] - last[0]) < 8 * px) return [last[0], grid(q[1])];
+      if (Math.abs(q[1] - last[1]) < 8 * px) return [grid(q[0]), last[1]];
     }
-    return [Math.round(q[0] * 20) / 20, Math.round(q[1] * 20) / 20];
+    return [grid(q[0]), grid(q[1])];
   };
 
   const setPlan = (fn: (pl: PlanUnderlay) => void) =>
@@ -270,7 +275,7 @@ export function PlanTab() {
           type: sug?.type ?? '22',
           height: sug?.height ?? 600,
           length: sug?.length ?? 1000,
-          quantity: 1,
+          quantity: sug?.quantity ?? 1,
           wallIndex: w.i,
           offsetM: w.along,
         });
@@ -383,7 +388,7 @@ export function PlanTab() {
       });
     if (sel.kind === 'room') {
       const r = p.rooms.find((x) => x.id === sel.id);
-      if (r && (await ask.confirm(`Delete ${r.name} and everything in it?`, { danger: true }))) update((d) => void (d.rooms = d.rooms.filter((x) => x.id !== sel.id)));
+      if (r && (await ask.confirm(`Delete ${r.name} and everything in it?`, { danger: true }))) update((d) => removeRoom(d, sel.id));
       else return;
     }
     select(null);
@@ -431,10 +436,24 @@ export function PlanTab() {
   // ----- pan / zoom / drag -----
 
   const zoomAt = (wx: number, wy: number, k: number) => setView({ x: wx - (wx - vb.x) * k, y: wy - (wy - vb.y) * k, w: vb.w * k });
-  const onWheel = (e: WheelEvent) => {
+  const onWheel = (e: WheelEvent | globalThis.WheelEvent) => {
     const [wx, wy] = toWorld(e);
     zoomAt(wx, wy, e.deltaY > 0 ? 1.15 : 1 / 1.15);
   };
+  // Zooming with the wheel must not scroll the page too. React's wheel handler can't
+  // cancel the scroll, so listen directly with passive: false.
+  const wheelRef = useRef(onWheel);
+  wheelRef.current = onWheel;
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el) return;
+    const h = (e: globalThis.WheelEvent) => {
+      e.preventDefault();
+      wheelRef.current(e);
+    };
+    el.addEventListener('wheel', h, { passive: false });
+    return () => el.removeEventListener('wheel', h);
+  });
   const onDown = (e: RMouseEvent) => {
     const q = toWorld(e);
     if (tool === 'select' && sel?.kind === 'emitter') {
@@ -578,11 +597,19 @@ export function PlanTab() {
           </select>
           <label className="btn ghost sm">
             Import DXF
-            <input type="file" accept=".dxf" hidden onChange={(e) => e.target.files?.[0] && importDxf(e.target.files[0])} />
+            <input type="file" accept=".dxf" hidden onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = '';
+              if (f) importDxf(f);
+            }} />
           </label>
           <label className="btn ghost sm">
             Import image
-            <input type="file" accept="image/*" hidden onChange={(e) => e.target.files?.[0] && importImage(e.target.files[0])} />
+            <input type="file" accept="image/*" hidden onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = '';
+              if (f) importImage(f);
+            }} />
           </label>
         </div>
       </div>
@@ -595,7 +622,6 @@ export function PlanTab() {
             viewBox={`${vb.x} ${vb.y} ${vb.w} ${vh}`}
             onClick={onClick}
             onDoubleClick={onDoubleClick}
-            onWheel={onWheel}
             onMouseDown={onDown}
             onMouseMove={onMove}
             onMouseUp={onUp}

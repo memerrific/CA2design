@@ -2,7 +2,7 @@ import { go } from '../App';
 import { demoFor } from '../data/demo';
 import { projectHeatLoss } from '../engine/heatloss';
 import type { ModuleId, Project } from '../engine/model';
-import { CATEGORIES, categoryInfo, JOB_TYPES, jobTypeOf, STEPS, type CategoryId, type JobType } from '../jobs';
+import { CATEGORIES, categoryInfo, JOB_TYPES, jobName, jobTypeOf, STEPS, type CategoryId, type JobType } from '../jobs';
 import { STAGES, stageOf } from '../modules';
 import { applyJobType, newProjectFor } from '../newJob';
 import { store, useStore } from '../store';
@@ -199,7 +199,7 @@ function JobRow({ p }: { p: Project }) {
         <Icon name={job.icon} />
       </span>
       <span className="row-main">
-        <b>{p.name}</b>
+        <b>{jobName(p)}</b>
         <small>{[p.customer.postcode?.toUpperCase(), job.name].filter(Boolean).join(' · ')}</small>
       </span>
       <span className="pill stage">{STAGES.find((s) => s.id === stageOf(p))?.name ?? 'Archived'}</span>

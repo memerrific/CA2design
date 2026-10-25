@@ -229,6 +229,7 @@ export interface ProjectSettings {
   externalTemp: number;
   locationName: string;
   meanExternalTemp: number; // annual mean, used for ground losses
+  meanRegion?: string; // which MEAN_ANNUAL_TEMPS region it came from (several share a value)
   neighbourTemp: number;
   unheatedTemp: number;
   thermalBridgeU: number; // ΔU added to external elements

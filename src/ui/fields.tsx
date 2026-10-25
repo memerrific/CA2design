@@ -1,5 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
 
+/** Quantities with a unit can't be negative, except temperatures; a ΔT in kelvin must be above zero. */
+const floorFor = (unit?: string) => (unit === 'K' ? 0.1 : unit && unit !== '°C' && unit !== '×' ? 0 : undefined);
+
 export function NumField({
   label,
   value,
@@ -7,6 +10,7 @@ export function NumField({
   step,
   unit,
   min,
+  max,
   width,
   title,
 }: {
@@ -15,40 +19,64 @@ export function NumField({
   onChange: (v: number) => void;
   step?: number;
   unit?: string;
+  /** Lowest value accepted. Defaults to 0 for anything with a unit except °C, and just above 0 for ΔT (K). */
   min?: number;
+  max?: number;
   width?: number;
   title?: string;
 }) {
   const [text, setText] = useState(value === undefined || Number.isNaN(value) ? '' : String(value));
+  const [error, setError] = useState('');
   useEffect(() => {
     const parsed = parseFloat(text);
     if (value !== undefined && parsed !== value) setText(String(value));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
+  const floor = min ?? floorFor(unit);
   const input = (
-    <span className="num">
+    <span className={`num ${error ? 'invalid' : ''}`}>
       <input
         type="number"
         inputMode="decimal"
         value={text}
         step={step ?? 'any'}
-        min={min}
-        title={title}
+        min={floor}
+        max={max}
+        title={error || title}
+        aria-invalid={error ? true : undefined}
         style={width ? { width } : undefined}
         onChange={(e) => {
           setText(e.target.value);
           const v = parseFloat(e.target.value);
-          if (!Number.isNaN(v)) onChange(v);
+          if (Number.isNaN(v)) return setError(e.target.value.trim() ? 'Enter a number' : '');
+          if (floor !== undefined && v < floor) return setError(floor === 0 ? 'Can’t be negative' : `Must be at least ${floor}`);
+          if (max !== undefined && v > max) return setError(`Must be ${max} or less`);
+          setError('');
+          onChange(v);
+        }}
+        onBlur={() => {
+          // Leaving a box with a rejected value puts back the last good one.
+          if (error && value !== undefined) {
+            setText(String(value));
+            setError('');
+          }
         }}
       />
       {unit && <em>{unit}</em>}
     </span>
   );
-  if (!label) return input;
+  if (!label)
+    return (
+      <>
+        {input}
+        {error && <small className="num-error">{error}</small>}
+      </>
+    );
   return (
     <label className="field">
       <span>{label}</span>
       {input}
+      {error && <small className="num-error">{error}</small>}
     </label>
   );
 }
@@ -154,3 +182,6 @@ export function Pill({ tone, children }: { tone: 'ok' | 'warn' | 'bad' | 'info';
 
 export const fmt = (v: number, dp = 0) =>
   Number.isFinite(v) ? v.toLocaleString('en-GB', { minimumFractionDigits: dp, maximumFractionDigits: dp }) : '–';
+
+/** "1 room", "3 rooms". */
+export const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;

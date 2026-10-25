@@ -4,11 +4,12 @@ import { FLUIDS, type FluidId } from '../engine/fluid';
 import type { CompanyProfile, Project } from '../engine/model';
 import { STAGES } from '../modules';
 import { DEFAULT_PREFS, prefsStore, usePrefs, type Theme } from '../prefs';
-import { downloadJson, readFile, store, useStore } from '../store';
+import { downloadJson, store, useStore } from '../store';
 import { ask } from '../ui/dialog';
 import { Explain, hiddenExplanationCount, showAllExplanations } from '../ui/explain';
 import { Card, NumField, Select, TextField } from '../ui/fields';
 import { Icon } from '../ui/icons';
+import { downscaleImage } from '../ui/image';
 import { currentAccount, deleteAccount, emailTaken, initials, isValidEmail, listAccounts, signOut, updateAccount } from '../account';
 import { loadExamples } from './Home';
 
@@ -259,7 +260,8 @@ function Company() {
                 hidden
                 onChange={async (e) => {
                   const f = e.target.files?.[0];
-                  if (f) set({ logoDataUrl: await readFile(f, 'dataUrl') });
+                  e.target.value = '';
+                  if (f) set({ logoDataUrl: await downscaleImage(f, 800, 'image/png') });
                 }}
               />
             </label>

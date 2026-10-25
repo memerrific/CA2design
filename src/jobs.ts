@@ -35,7 +35,7 @@ export interface StepDef {
 
 export const STEPS: Record<string, StepDef> = {
   overview: { id: 'overview', label: 'Overview', group: 'Survey', explain: 'The job’s details: customer, address, engineer and notes, plus the design conditions (outside temperature, location, house age) every calculation uses. The tick list shows which steps are done.' },
-  plan: { id: 'plan', label: 'Floor plan', group: 'Survey', explain: 'Draw the rooms, or import a Polycam scan or plan image and trace over it. Then place radiators, underfloor and pipe runs on the plan. Floors and drawing layers are in the panel on the left.' },
+  plan: { id: 'plan', label: 'Floor plan', group: 'Survey', explain: 'Draw the rooms, or import a Polycam scan or plan image and trace over it. Then place radiators, underfloor and pipe runs on the plan. Floors and drawing layers are in the side panel (under the drawing on a phone).' },
   rooms: { id: 'rooms', label: 'Rooms', group: 'Survey', explain: 'Each room’s size, temperature, walls, windows, doors, floor and ceiling. The U-values come from the RdSAP tables for the house’s age unless you change them.' },
   heatloss: { id: 'heatloss', label: 'Heat loss', group: 'Design', explain: 'Room-by-room heat loss to BS EN 12831 using MCS design temperatures: fabric losses through every surface plus ventilation. The total is what the heat source has to deliver on the coldest design day.' },
   emitters: { id: 'emitters', label: 'Radiators', group: 'Design', explain: 'Checks each room’s radiators against its heat loss at your flow temperature, and suggests sizes where they fall short. Outputs are corrected from the catalogue ΔT50 figure to your real water and room temperatures.' },
@@ -122,3 +122,6 @@ export function jobTypeOf(p: Project): JobType {
 
 /** Old #/m/<module> links point at the matching job type. */
 export const jobForModule = (m: string) => LEGACY[m as ModuleId];
+
+/** A job's name for display; blank names show as “Untitled job”. */
+export const jobName = (p: Project) => p.name.trim() || 'Untitled job';

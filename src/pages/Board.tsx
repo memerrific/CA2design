@@ -5,14 +5,14 @@ import { projectHeatLoss } from '../engine/heatloss';
 import type { Project } from '../engine/model';
 import { analysePlant } from '../engine/plant';
 import { analysePool, defaultPoolInputs } from '../engine/pool';
-import { CATEGORIES, jobInfo, jobTypeOf } from '../jobs';
+import { CATEGORIES, jobInfo, jobName, jobTypeOf } from '../jobs';
 import { moduleOf, STAGES, stageOf, type StageId } from '../modules';
 import { Explain } from '../ui/explain';
 import { timeAgo } from '../ui/time';
 import { loadExamples, startJob } from './Home';
 import { downloadJson, store, useStore } from '../store';
 import { ask } from '../ui/dialog';
-import { fmt } from '../ui/fields';
+import { plural, fmt } from '../ui/fields';
 import { Icon } from '../ui/icons';
 
 
@@ -21,8 +21,8 @@ function headline(p: Project): string {
   if (m === 'plantroom' && p.plant) return `${fmt(analysePlant(p.plant, p.settings.fluid).connectedKw, 0)} kW plant`;
   if (m === 'pool') return `${fmt(analysePool({ ...defaultPoolInputs(), ...p.pool }).dutyKw, 1)} kW pool`;
   if (m === 'dhw') return p.dhw?.badge.capacityL ? `${p.dhw.badge.capacityL} L cylinder` : 'Hot water';
-  if (m === 'materials') return `${p.pipes.length} pipe runs`;
-  return p.rooms.length ? `${fmt(projectHeatLoss(p).totalW / 1000, 1)} kW · ${p.rooms.length} rooms` : 'No rooms yet';
+  if (m === 'materials') return plural(p.pipes.length, 'pipe run');
+  return p.rooms.length ? `${fmt(projectHeatLoss(p).totalW / 1000, 1)} kW · ${plural(p.rooms.length, 'room')}` : 'No rooms yet';
 }
 
 const initials = (name: string) =>
@@ -202,7 +202,7 @@ export function BoardPage({ jobType }: { jobType?: string }) {
                 return (
                   <tr key={p.id} onClick={() => go(`p/${p.id}/overview`)}>
                     <td>
-                      <b>{p.name}</b>
+                      <b>{jobName(p)}</b>
                       {p.customer.name && <small>{p.customer.name}</small>}
                     </td>
                     <td>
@@ -236,7 +236,7 @@ function Card({ p, onMove }: { p: Project; onMove: (p: Project, s: StageId) => v
   return (
     <article className="bd-card" draggable onDragStart={(e) => e.dataTransfer.setData('text/plain', p.id)} onClick={() => go(`p/${p.id}/overview`)}>
       <header>
-        <h4>{p.name}</h4>
+        <h4>{jobName(p)}</h4>
         <span onClick={(e) => e.stopPropagation()}>
           <CardMenu p={p} onMove={onMove} />
         </span>
@@ -292,7 +292,7 @@ function CardMenu({ p, onMove }: { p: Project; onMove: (p: Project, s: StageId) 
         >
           Duplicate
         </button>
-        <button onClick={() => downloadJson(`${p.name.replace(/\W+/g, '-')}.json`, p)}>Export file</button>
+        <button onClick={() => downloadJson(`${p.name.replace(/\W+/g, '-').replace(/^-+|-+$/g, '') || 'job'}.json`, p)}>Export file</button>
         <button className="danger" onClick={async () => (await ask.confirm(`Delete “${p.name}”? This cannot be undone.`, { danger: true })) && store.deleteProject(p.id)}>
           Delete
         </button>

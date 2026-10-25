@@ -14,7 +14,7 @@ import { defaultRoomTemp, roomType } from '../../data/rooms';
 import { ageBandDefaults, settingsOf } from '../../engine/heatloss';
 import type { GroundFloorKind } from '../../engine/groundfloor';
 import { ask } from '../../ui/dialog';
-import { Card, fmt, NumField, Select } from '../../ui/fields';
+import { plural, Card, fmt, NumField, Select } from '../../ui/fields';
 import { useProject } from '../ProjectView';
 
 // Rough mapping from postcodes.io regions to the MCS annual-mean regions.
@@ -29,6 +29,19 @@ const REGION_MAP: Record<string, string> = {
   'North East': 'North East England',
   'Yorkshire and The Humber': 'East Pennines',
 };
+
+// postcodes.io gives Scottish postcodes no region, so use the nearest Scottish mean-temperature station.
+const SCOTLAND: { region: string; lat: number; lon: number }[] = [
+  { region: 'Borders', lat: 55.42, lon: -1.6 },
+  { region: 'East Scotland', lat: 56.38, lon: -2.86 },
+  { region: 'North East Scotland', lat: 57.2, lon: -2.2 },
+  { region: 'North West Scotland', lat: 58.21, lon: -6.32 },
+  { region: 'West Scotland', lat: 55.87, lon: -4.43 },
+];
+function scottishRegion(lat: number, lon: number): string {
+  const d = (r: { lat: number; lon: number }) => (r.lat - lat) ** 2 + ((r.lon - lon) * Math.cos((lat * Math.PI) / 180)) ** 2;
+  return [...SCOTLAND].sort((a, b) => d(a) - d(b))[0].region;
+}
 
 export function DesignConditionsCard() {
   const { project: p, update, loss } = useProject();
@@ -62,9 +75,15 @@ export function DesignConditionsCard() {
       if (j.status !== 200) throw new Error(j.error || 'not found');
       const near = nearestStation(j.result.latitude, j.result.longitude);
       setStation(near.id);
-      const region = j.result.country === 'Wales' ? 'Wales' : j.result.country === 'Northern Ireland' ? 'Northern Ireland' : REGION_MAP[j.result.region];
+      const c = j.result.country;
+      const region =
+        c === 'Wales' ? 'Wales' : c === 'Northern Ireland' ? 'Northern Ireland' : c === 'Scotland' ? scottishRegion(j.result.latitude, j.result.longitude) : REGION_MAP[j.result.region];
       const mean = MEAN_ANNUAL_TEMPS.find((m) => m.region === region);
-      if (mean) update((d) => void (d.settings.meanExternalTemp = mean.temp));
+      if (mean)
+        update((d) => {
+          d.settings.meanExternalTemp = mean.temp;
+          d.settings.meanRegion = mean.region;
+        });
       setLookup(`Nearest design station: ${near.location} (${near.station}). ${mean ? `Annual mean: ${mean.region} ${mean.temp} °C. ` : ''}Enter the property altitude if over 100 m.`);
     } catch (e) {
       setLookup(`Couldn't look that postcode up (${(e as Error).message}). Pick the station by hand.`);
@@ -76,7 +95,7 @@ export function DesignConditionsCard() {
       d.settings.ageBand = band;
       Object.assign(d.settings, ageBandDefaults(band));
     });
-    if (p.rooms.length && (await ask.confirm(`Apply the room temperatures for age band ${band} to all ${p.rooms.length} rooms? Rooms you have changed by hand will be reset.`))) {
+    if (p.rooms.length && (await ask.confirm(`Apply the room temperatures for age band ${band} to all ${plural(p.rooms.length, 'room')}? Rooms you have changed by hand will be reset.`))) {
       update((d) => {
         for (const r of d.rooms) {
           r.designTemp = defaultRoomTemp(r.typeId, band);
@@ -99,7 +118,7 @@ export function DesignConditionsCard() {
             onChange={(v) => setStation(v)}
             options={[{ value: '', label: 'Custom temperature' }, ...DESIGN_STATIONS.map((x) => ({ value: x.id, label: `${x.location} (${x.station}) ${x.t996} °C` }))]}
           />
-          <NumField label="Property altitude" unit="m" value={s.altitude} onChange={(v) => (s.stationId ? setStation(s.stationId, v) : update((d) => void (d.settings.altitude = v)))} />
+          <NumField label="Property altitude" unit="m" min={-50} value={s.altitude} onChange={(v) => (s.stationId ? setStation(s.stationId, v) : update((d) => void (d.settings.altitude = v)))} />
           <Select
             label="Design percentile"
             value={s.percentile}
@@ -122,11 +141,22 @@ export function DesignConditionsCard() {
           />
           <Select
             label="Annual mean temp (ground)"
-            value={String(s.meanExternalTemp)}
-            onChange={(v) => update((d) => void (d.settings.meanExternalTemp = Number(v)))}
+            value={
+              MEAN_ANNUAL_TEMPS.find((m) => m.region === s.meanRegion && m.temp === s.meanExternalTemp)?.region ??
+              MEAN_ANNUAL_TEMPS.find((m) => m.temp === s.meanExternalTemp)?.region ??
+              'custom'
+            }
+            onChange={(v) =>
+              update((d) => {
+                const m = MEAN_ANNUAL_TEMPS.find((x) => x.region === v);
+                if (!m) return;
+                d.settings.meanExternalTemp = m.temp;
+                d.settings.meanRegion = m.region;
+              })
+            }
             options={[
-              ...MEAN_ANNUAL_TEMPS.map((m) => ({ value: String(m.temp), label: `${m.region} (${m.station}) ${m.temp} °C` })),
-              ...(MEAN_ANNUAL_TEMPS.some((m) => m.temp === s.meanExternalTemp) ? [] : [{ value: String(s.meanExternalTemp), label: `${s.meanExternalTemp} °C (custom)` }]),
+              ...MEAN_ANNUAL_TEMPS.map((m) => ({ value: m.region, label: `${m.region} (${m.station}) ${m.temp} °C` })),
+              ...(MEAN_ANNUAL_TEMPS.some((m) => m.temp === s.meanExternalTemp) ? [] : [{ value: 'custom', label: `${s.meanExternalTemp} °C (custom)` }]),
             ]}
           />
           <NumField label="Heated neighbour" unit="°C" value={s.neighbourTemp} onChange={(v) => update((d) => void (d.settings.neighbourTemp = v))} />
