@@ -1,6 +1,7 @@
 // View state for the floor plan canvas, shared between the plan and the
 // sidebar's floors / layers panels. Remembered per browser.
 
+import { scopedKey } from '../account';
 import { useSyncExternalStore } from 'react';
 
 export type LayerId = 'outlines' | 'dims' | 'emitters' | 'flow' | 'return' | 'ufh' | 'notes' | 'underlay';
@@ -24,7 +25,7 @@ interface PlanUi {
   selection: Selection;
 }
 
-const KEY = 'ca2d.planui.v1';
+const KEY = scopedKey('planui.v1');
 let ui: PlanUi = {
   level: 'Ground',
   layers: { outlines: true, dims: true, emitters: true, flow: true, return: true, ufh: true, notes: true, underlay: true },

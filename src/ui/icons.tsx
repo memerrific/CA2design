@@ -42,6 +42,7 @@ const PATHS: Record<string, string> = {
   clock: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2',
   pin: 'M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11zM12 7.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z',
   sidebar: 'M4 4h16v16H4zM9 4v16M15 10l-2 2 2 2',
+  user: 'M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM4 21c1-4 4-6 8-6s7 2 8 6',
   archive: 'M3 5h18v4H3zM5 9v10h14V9M10 13h4',
 };
 

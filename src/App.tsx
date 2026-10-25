@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AppSidebar } from './AppSidebar';
+import { currentAccount } from './account';
+import { WelcomePage } from './pages/Welcome';
 import { BoardPage } from './pages/Board';
 import { CategoryPage, HomePage, NewJobPage } from './pages/Home';
 import { categoryInfo, jobForModule, jobInfo, type CategoryId } from './jobs';
@@ -27,6 +29,14 @@ export const go = (path: string) => {
 export default function App() {
   const parts = useHash();
   const { projects } = useStore();
+
+  if (!currentAccount)
+    return (
+      <>
+        <WelcomePage />
+        <Dialogs />
+      </>
+    );
 
   let page;
   if (parts[0] === 'p' && parts[1]) {

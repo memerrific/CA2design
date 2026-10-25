@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { scopedKey } from './account';
 import type { AgeBand } from './data/climate';
 import { designTemperature, station } from './data/climate';
 import { ageBandDefaults } from './engine/heatloss';
@@ -51,7 +52,7 @@ export const DEFAULT_PREFS: Prefs = {
   },
 };
 
-const KEY = 'ca2d.prefs.v1';
+const KEY = scopedKey('prefs.v1');
 const listeners = new Set<() => void>();
 
 function load(): Prefs {

@@ -17,7 +17,8 @@
     <script>
       // Set the theme before the page draws, so dark mode never flashes white.
       try {
-        var t = (JSON.parse(localStorage.getItem('ca2d.prefs.v1') || '{}').theme) || 'system';
+        var who = JSON.parse(localStorage.getItem('ca2d.session.v1') || 'null');
+        var t = (who && JSON.parse(localStorage.getItem('ca2d.u.' + who + '.prefs.v1') || '{}').theme) || 'system';
         if (t === 'system') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         document.documentElement.dataset.theme = t;
       } catch (e) {}

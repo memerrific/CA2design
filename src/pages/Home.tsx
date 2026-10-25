@@ -8,6 +8,7 @@ import { applyJobType, newProjectFor } from '../newJob';
 import { store, useStore } from '../store';
 import { Explain } from '../ui/explain';
 import { Icon } from '../ui/icons';
+import { currentAccount } from '../account';
 import { stepDone } from './SidePanels';
 import { timeAgo } from '../ui/time';
 
@@ -53,7 +54,10 @@ export function HomePage() {
       <header className="pg-head">
         <div>
           <p className="pg-crumb">{company.name}</p>
-          <h1>{greeting()}</h1>
+          <h1>
+            {greeting()}
+            {currentAccount ? `, ${currentAccount.name.split(' ')[0]}` : ''}
+          </h1>
         </div>
         <div className="pg-actions">
           <a className="btn-primary" href="#/new">
@@ -61,6 +65,45 @@ export function HomePage() {
           </a>
         </div>
       </header>
+
+      {projects.length === 0 && currentAccount && (
+        <section className="welcome-steps">
+          <h2>Welcome, {currentAccount.name.split(' ')[0]}</h2>
+          <p>Three things to get you going. You can come back to the first two any time in Settings.</p>
+          <ol>
+            <li>
+              <a href="#/settings/company">
+                <span className="ws-n">1</span>
+                <span>
+                  <b>Check your company details</b>
+                  <small>Logo, phone and address on every pack you print.</small>
+                </span>
+                <Icon name="chevronRight" />
+              </a>
+            </li>
+            <li>
+              <a href="#/settings/defaults">
+                <span className="ws-n">2</span>
+                <span>
+                  <b>Set your job defaults</b>
+                  <small>Flow temperature, weather station and house age every new job starts with.</small>
+                </span>
+                <Icon name="chevronRight" />
+              </a>
+            </li>
+            <li>
+              <a href="#/new">
+                <span className="ws-n">3</span>
+                <span>
+                  <b>Start your first job</b>
+                  <small>Pick the job type; it shows only the steps that job needs.</small>
+                </span>
+                <Icon name="chevronRight" />
+              </a>
+            </li>
+          </ol>
+        </section>
+      )}
 
       <Explain id="home">
         Pick a category to start a job, or carry on with one below. Each job type only shows the steps it needs, and every step works on the same

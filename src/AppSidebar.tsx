@@ -1,3 +1,4 @@
+import { currentAccount, initials, scopedKey } from './account';
 import { useState } from 'react';
 import { uid } from './engine/factory';
 import type { Project } from './engine/model';
@@ -11,7 +12,7 @@ export function AppSidebar({ route }: { route: string[] }) {
   const { projects, company } = useStore();
   const [rail, setRailState] = useState(() => {
     try {
-      return localStorage.getItem('ca2d.rail') === '1';
+      return localStorage.getItem(scopedKey('rail')) === '1';
     } catch {
       return false;
     }
@@ -19,7 +20,7 @@ export function AppSidebar({ route }: { route: string[] }) {
   const setRail = (v: boolean) => {
     setRailState(v);
     try {
-      localStorage.setItem('ca2d.rail', v ? '1' : '0');
+      localStorage.setItem(scopedKey('rail'), v ? '1' : '0');
     } catch {
       /* not saved */
     }
@@ -83,11 +84,20 @@ export function AppSidebar({ route }: { route: string[] }) {
           <h6>More</h6>
           <Item href="#/prices" icon="coins" label="Price list" on={at('prices')} />
           <Item href="#/methods" icon="book" label="Methods & sources" on={at('methods')} />
-          <Item href="#/settings" icon="gear" label="Settings & branding" on={route[0] === 'settings'} />
+          <Item href="#/settings" icon="gear" label="Settings" on={route[0] === 'settings' && route[1] !== 'account'} />
         </div>
       </nav>
 
       <div className="sb-foot">
+        {currentAccount && (
+          <a href="#/settings/account" className={`sb-item sb-me ${route[0] === 'settings' && route[1] === 'account' ? 'on' : ''}`} title={rail ? `${currentAccount.name} · ${currentAccount.email}` : undefined}>
+            <i>{initials(currentAccount.name)}</i>
+            <span className="sb-label">
+              <b>{currentAccount.name}</b>
+              <small>{currentAccount.email}</small>
+            </span>
+          </a>
+        )}
         <label className="sb-item" title={rail ? 'Import projects' : undefined}>
           <Icon name="upload" />
           <span className="sb-label">Import projects</span>

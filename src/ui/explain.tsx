@@ -1,8 +1,9 @@
 import { useState, type ReactNode } from 'react';
 import { Icon } from './icons';
+import { scopedKey } from '../account';
 import { usePrefs } from '../prefs';
 
-const KEY = 'ca2d.explain.hidden';
+const KEY = scopedKey('explain.hidden');
 
 function readHidden(): string[] {
   try {

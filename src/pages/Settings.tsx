@@ -9,9 +9,11 @@ import { ask } from '../ui/dialog';
 import { Explain, hiddenExplanationCount, showAllExplanations } from '../ui/explain';
 import { Card, NumField, Select, TextField } from '../ui/fields';
 import { Icon } from '../ui/icons';
+import { currentAccount, deleteAccount, emailTaken, initials, isValidEmail, listAccounts, signOut, updateAccount } from '../account';
 import { loadExamples } from './Home';
 
 const SECTIONS = [
+  { id: 'account', icon: 'user', name: 'Account', blurb: 'Your name, email and sign out' },
   { id: 'general', icon: 'gear', name: 'General', blurb: 'Appearance and explanations' },
   { id: 'company', icon: 'heating', name: 'Company & branding', blurb: 'Logo and details on printed packs' },
   { id: 'defaults', icon: 'radiator', name: 'Job defaults', blurb: 'What every new job starts with' },
@@ -49,6 +51,7 @@ export function SettingsPage({ section }: { section?: string }) {
         </nav>
         <div className="set-body">
           <h2 className="set-title">{info.name}</h2>
+          {current === 'account' && <AccountSection />}
           {current === 'general' && <General />}
           {current === 'company' && <Company />}
           {current === 'defaults' && <Defaults />}
@@ -87,6 +90,93 @@ const THEMES: { id: Theme; name: string }[] = [
   { id: 'dark', name: 'Dark' },
   { id: 'system', name: 'Match this device' },
 ];
+
+function AccountSection() {
+  const acc = currentAccount!;
+  const [name, setName] = useState(acc.name);
+  const [email, setEmail] = useState(acc.email);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const others = listAccounts().filter((a) => a.id !== acc.id);
+  const changed = name.trim() !== acc.name || email.trim() !== acc.email;
+
+  const save = () => {
+    if (!name.trim()) return setMsg({ ok: false, text: 'Enter your name.' });
+    if (!isValidEmail(email)) return setMsg({ ok: false, text: 'Enter a valid email address, like name@example.com.' });
+    if (emailTaken(email, acc.id)) return setMsg({ ok: false, text: 'Another account on this device already uses that email.' });
+    updateAccount(acc.id, { name: name.trim(), email: email.trim() });
+    window.location.reload();
+  };
+
+  const remove = async () => {
+    const typed = await ask.prompt(`Delete the account ${acc.email} and all its jobs, prices and settings on this device? This cannot be undone. Type the email address to confirm.`);
+    if (typed === null) return;
+    if (typed.trim().toLowerCase() !== acc.email.toLowerCase()) {
+      await ask.alert('The email did not match, so nothing was deleted.');
+      return;
+    }
+    deleteAccount(acc.id);
+  };
+
+  return (
+    <>
+      <Explain id="settings-account">
+        Your account keeps its own jobs, prices, company details and settings. Accounts are saved on this device only and have no password.
+      </Explain>
+      <Card>
+        <div className="me-head">
+          <i>{initials(acc.name)}</i>
+          <div>
+            <b>{acc.name}</b>
+            <small>
+              {acc.email} · created {new Date(acc.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </small>
+          </div>
+        </div>
+      </Card>
+      <Card title="Your details">
+        <div className="grid2">
+          <label className="field">
+            <span>Name</span>
+            <input id="me-name" value={name} onChange={(e) => (setName(e.target.value), setMsg(null))} />
+          </label>
+          <label className="field">
+            <span>Email</span>
+            <input id="me-email" type="email" value={email} onChange={(e) => (setEmail(e.target.value), setMsg(null))} />
+          </label>
+        </div>
+        {msg && <p className={msg.ok ? 'muted small' : 'form-error'}>{msg.text}</p>}
+        <div className="actions">
+          <button className="btn-primary" disabled={!changed} onClick={save}>
+            Save changes
+          </button>
+        </div>
+      </Card>
+      <Card title="Sign out">
+        <Row label="Switch account" help={others.length ? `${others.length} other account${others.length === 1 ? '' : 's'} on this device.` : 'Sign out to create another account on this device.'}>
+          <button className="btn-line" onClick={signOut}>
+            Switch account
+          </button>
+        </Row>
+        <Row label="Sign out" help="Your jobs stay saved in this account for next time.">
+          <button className="btn-line" onClick={signOut}>
+            Sign out
+          </button>
+        </Row>
+      </Card>
+      <Card title="Delete account" className="danger-card">
+        <Row label="Delete this account" help="Removes the account and everything saved in it on this device: jobs, prices, company details and settings. Back up first if you want a copy.">
+          <button className="btn-line danger" onClick={remove}>
+            Delete account
+          </button>
+        </Row>
+      </Card>
+      <p className="muted small">
+        Signing in from any device with an emailed link (no password) needs an online sign-in service. It can be added later without changing how this
+        looks.
+      </p>
+    </>
+  );
+}
 
 function General() {
   const p = usePrefs();

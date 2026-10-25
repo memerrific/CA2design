@@ -2,13 +2,14 @@
 // Projects can be exported/imported as JSON files for backup or moving devices.
 
 import { useSyncExternalStore } from 'react';
+import { scopedKey } from './account';
 import { DEFAULT_COMPANY } from './engine/factory';
 import { ask } from './ui/dialog';
 import type { CompanyProfile, Project } from './engine/model';
 
-const KEY_PROJECTS = 'ca2d.projects.v1';
-const KEY_COMPANY = 'ca2d.company.v1';
-const KEY_PRICES = 'ca2d.prices.v1';
+const KEY_PROJECTS = scopedKey('projects.v1');
+const KEY_COMPANY = scopedKey('company.v1');
+const KEY_PRICES = scopedKey('prices.v1');
 
 interface State {
   projects: Project[];
